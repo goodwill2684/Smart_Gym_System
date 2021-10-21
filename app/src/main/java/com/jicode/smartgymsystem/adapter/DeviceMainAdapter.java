@@ -3,9 +3,8 @@ package com.jicode.smartgymsystem.adapter;
 import android.content.Context;
 import android.widget.TextView;
 
-import com.jicode.pm_monitor.R;
+import com.jicode.smartgymsystem.R;
 import com.vise.baseble.model.BluetoothLeDevice;
-import com.vise.baseble.utils.HexUtil;
 import com.vise.xsnow.ui.adapter.helper.HelperAdapter;
 import com.vise.xsnow.ui.adapter.helper.HelperViewHolder;
 

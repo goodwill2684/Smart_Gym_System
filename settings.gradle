@@ -1,2 +1,3 @@
 rootProject.name = "SmartGymSystem"
-include ':app'
+include ':app', ':baseble'
+

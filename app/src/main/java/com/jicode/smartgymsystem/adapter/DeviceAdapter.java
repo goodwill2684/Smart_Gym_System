@@ -1,9 +1,11 @@
 package com.jicode.smartgymsystem.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.widget.TextView;
 
-import com.jicode.pm_monitor.R;
+
+import com.jicode.smartgymsystem.R;
 import com.vise.baseble.model.BluetoothLeDevice;
 import com.vise.xsnow.ui.adapter.helper.HelperAdapter;
 import com.vise.xsnow.ui.adapter.helper.HelperViewHolder;
@@ -21,7 +23,7 @@ public class DeviceAdapter extends HelperAdapter<BluetoothLeDevice> {
         TextView deviceMacTv = viewHolder.getView(R.id.device_mac);
         TextView deviceRssiTv = viewHolder.getView(R.id.device_rssi);
         if (bluetoothLeDevice != null && bluetoothLeDevice.getDevice() != null) {
-            String deviceName = bluetoothLeDevice.getDevice().getName();
+            @SuppressLint("MissingPermission") String deviceName = bluetoothLeDevice.getDevice().getName();
             if (deviceName != null && !deviceName.isEmpty()) {
                 deviceNameTv.setText(deviceName);
             } else {
