@@ -1,443 +1,430 @@
 package com.jicode.smartgymsystem;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-
 import android.Manifest;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattService;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothGatt;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.Menu;
+import android.provider.Settings;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.SimpleExpandableListAdapter;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.jicode.smartgymsystem.common.BluetoothDeviceManager;
-import com.jicode.smartgymsystem.common.ToastUtil;
-import com.jicode.smartgymsystem.event.CallbackDataEvent;
-import com.jicode.smartgymsystem.event.ConnectEvent;
-import com.jicode.smartgymsystem.event.NotifyDataEvent;
-import com.vise.baseble.ViseBle;
-import com.vise.baseble.common.ConnectState;
-import com.vise.baseble.common.PropertyType;
-import com.vise.baseble.core.DeviceMirror;
-import com.vise.baseble.model.BluetoothLeDevice;
-import com.vise.baseble.model.resolver.GattAttributeResolver;
-import com.vise.baseble.utils.BleUtil;
-import com.vise.baseble.utils.HexUtil;
-import com.vise.log.ViseLog;
-import com.vise.log.inner.LogcatTree;
-import com.vise.xsnow.cache.SpCache;
-import com.vise.xsnow.event.BusManager;
-import com.vise.xsnow.event.Subscribe;
-import com.vise.xsnow.permission.OnPermissionCallback;
-import com.vise.xsnow.permission.PermissionManager;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
-import org.w3c.dom.Text;
+
+import com.jicode.smartgymsystem.adapter.DeviceAdapter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-public class MainActivity extends AppCompatActivity {
-
-    private static final String LIST_NAME = "NAME";
-    private static final String LIST_UUID = "UUID";
-    public static final String WRITE_CHARACTERISTI_UUID_KEY = "write_uuid_key";
-    public static final String NOTIFY_CHARACTERISTIC_UUID_KEY = "notify_uuid_key";
-    public static final String WRITE_DATA_KEY = "write_data_key";
-
-    public static final int REQUEST_DEVICE = 10;
-    private SimpleExpandableListAdapter simpleExpandableListAdapter;
-
-    String dataArray = "";
+import java.util.UUID;
 
 
-    private SpCache mSpCache;
-    private BluetoothLeDevice mDevice;
-    private StringBuilder mOutputInfo = new StringBuilder();
-    private List<BluetoothGattService> mGattServices = new ArrayList<>();
-    private List<List<BluetoothGattCharacteristic>> mGattCharacteristics = new ArrayList<>();
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    boolean isconnected = false;
+    private static final String TAG = MainActivity.class.getSimpleName();
+    private static final int REQUEST_CODE_OPEN_GPS = 1;
+    private static final int REQUEST_CODE_PERMISSION_LOCATION = 2;
 
-    ImageView ledView;
-    ImageView connect;
+    private LinearLayout layout_setting;
+    private TextView txt_setting;
+    private Button btn_scan;
+    private EditText et_name, et_mac, et_uuid;
+    private Switch sw_auto;
+    private ImageView img_loading;
 
-    TextView dust1;
-    TextView dust2;
-    TextView dust3;
-    TextView connectid;
-
-    TextView temp;
-    TextView humi;
-
+    private Animation operatingAnim;
+    private DeviceAdapter mDeviceAdapter;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(Color.parseColor("#ffffff"));
-            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-        }
+        initView();
 
-        ViseLog.getLogConfig().configAllowLog(true);
-        ViseLog.plant(new LogcatTree());
-        BluetoothDeviceManager.getInstance().init(this);
-        BusManager.getBus().register(this);
+        BleManager.getInstance().init(getApplication());
+        BleManager.getInstance()
+                .enableLog(true)
+                .setReConnectCount(1, 5000)
+                .setConnectOverTime(20000)
+                .setOperateTimeout(5000);
 
-        ledView = (ImageView)findViewById(R.id.led);
-        connect = (ImageView)findViewById(R.id.connectbtn);
-
-        dust1 = (TextView)findViewById(R.id.dust1);
-        dust2 = (TextView)findViewById(R.id.dust2);
-        dust3 = (TextView)findViewById(R.id.dust3);
-        connectid = (TextView)findViewById(R.id.connectid);
-
-        temp = (TextView)findViewById(R.id.temp);
-        humi = (TextView)findViewById(R.id.humi);
-
-        Bitmap bit;
-        Canvas canvas;
-        Paint paint = new Paint();
-        bit = Bitmap.createBitmap(50,50,Bitmap.Config.ARGB_8888);
-        canvas = new Canvas(bit);
-        canvas.drawColor(Color.WHITE);
-        ledView.setImageBitmap(bit);
-        paint.setColor(Color.RED);
-        canvas.drawCircle(25,25,15,paint);
-
-        dust1.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-                mSpCache.put(WRITE_DATA_KEY + mDevice.getAddress(), "41");
-                BluetoothDeviceManager.getInstance().write(mDevice, HexUtil.decodeHex("41".toCharArray()));
-            }
-        });
-        connect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this,DeviceScanActivity.class);
-                startActivityForResult(intent,REQUEST_DEVICE);
-            }
-        });
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if(requestCode == REQUEST_DEVICE)
-        {
-            if(resultCode == RESULT_OK)
-            {
-                mDevice = data.getParcelableExtra("extra_device");
-                if (mDevice != null) {
-                }
-
-                if (!BluetoothDeviceManager.getInstance().isConnected(mDevice)) {
-                    BluetoothDeviceManager.getInstance().connect(mDevice);
-                    invalidateOptionsMenu();
-                }
-                mSpCache = new SpCache(this);
-
-            }
-        }
-    }
-
-    @Subscribe
-    public void showConnectedDevice(ConnectEvent event) {
-        if (event != null) {
-            if (event.isSuccess()) {
-
-                ToastUtil.showToast(MainActivity.this, "Connect Success!");
-                connectid.setText(mDevice.getName());
-                invalidateOptionsMenu();
-                if (event.getDeviceMirror() != null && event.getDeviceMirror().getBluetoothGatt() != null) {
-                    simpleExpandableListAdapter = displayGattServices(event.getDeviceMirror().getBluetoothGatt().getServices());
-                }
-
-                try {
-
-                    final BluetoothGattService service = mGattServices.get(2);
-                    final BluetoothGattCharacteristic characteristic = mGattCharacteristics.get(2).get(0);
-                    //         final int charaProp = characteristic.getProperties();
-
-                    mSpCache.put(NOTIFY_CHARACTERISTIC_UUID_KEY + mDevice.getAddress(), characteristic.getUuid().toString());
-                    BluetoothDeviceManager.getInstance().bindChannel(mDevice, PropertyType.PROPERTY_NOTIFY, service.getUuid(), characteristic.getUuid(), null);
-                    BluetoothDeviceManager.getInstance().registerNotify(mDevice, false);
-
-                    final BluetoothGattService service2 = mGattServices.get(2);
-                    final BluetoothGattCharacteristic characteristic2 = mGattCharacteristics.get(2).get(1);
-                    mSpCache.put(WRITE_CHARACTERISTI_UUID_KEY + mDevice.getAddress(), characteristic2.getUuid().toString());
-                    BluetoothDeviceManager.getInstance().bindChannel(mDevice, PropertyType.PROPERTY_WRITE, service2.getUuid(), characteristic2.getUuid(), null);
-                }catch (Exception e)
-                {
-                    BluetoothDeviceManager.getInstance().disconnect(mDevice);
-                    invalidateOptionsMenu();
-                }
-            } else {
-                if (event.isDisconnected()) {
-                    ToastUtil.showToast(MainActivity.this, "Disconnect!");
-                } else {
-                    ToastUtil.showToast(MainActivity.this, "Connect Failure!");
-                }
-                connectid.setText("No Device");
-                invalidateOptionsMenu();
-            }
-        }
-    }
-
-    @Subscribe
-    public void showDeviceCallbackData(CallbackDataEvent event) {
-        if (event != null) {
-            if (event.isSuccess()) {
-                if (event.getBluetoothGattChannel() != null && event.getBluetoothGattChannel().getCharacteristic() != null
-                        && event.getBluetoothGattChannel().getPropertyType() == PropertyType.PROPERTY_READ) {
-                }
-            } else {
-            }
-        }
-    }
-
-    @Subscribe
-    public void showDeviceNotifyData(NotifyDataEvent event) {
-        if (event != null && event.getData() != null && event.getBluetoothLeDevice() != null
-                && event.getBluetoothLeDevice().getAddress().equals(mDevice.getAddress())) {
-            if(event.getData().length > 0) {
-                try {
-                    dataArray += new String(event.getData());
-                    if (dataArray.length() == 28) {
-                        if (dataArray.substring(0, 1).equals("P")) {
-                            long checkSum = Integer.parseInt(dataArray.substring(dataArray.length() - 2));
-                            dataArray = dataArray.substring(1, dataArray.length() - 2);
-                            char c[] = dataArray.toCharArray();
-                            long currCheckSum = 0;
-                            for (int i = 0; i < c.length; i++) {
-                                currCheckSum += c[i];
-                            }
-                            if (make_ASCII(currCheckSum & 0xf) == checkSum) {
-                                dataArray = dataArray.substring(0, dataArray.length() - 1);
-                                String dataText[] = dataArray.split(",");
-                                String format = ""+Integer.parseInt(dataText[0]);
-                                dust1.setText(format);
-                                format = ""+Integer.parseInt(dataText[1]);
-                                dust2.setText(format);
-                                format = ""+Integer.parseInt(dataText[2]);
-                                dust3.setText(format);
-
-                                format = ""+Integer.parseInt(dataText[3]);
-                                temp.setText(format);
-                                format = ""+Integer.parseInt(dataText[4]);
-                                humi.setText(format);
-
-                                dataArray = "";
-                                if(Integer.parseInt(dataText[1])>300)
-                                {
-                                    Bitmap bit;
-                                    Canvas canvas;
-                                    Paint paint = new Paint();
-                                    bit = Bitmap.createBitmap(50,50,Bitmap.Config.ARGB_8888);
-                                    canvas = new Canvas(bit);
-                                    canvas.drawColor(Color.WHITE);
-                                    ledView.setImageBitmap(bit);
-                                    paint.setColor(Color.RED);
-                                    canvas.drawCircle(25,25,15,paint);
-                                }else
-                                {
-                                    Bitmap bit;
-                                    Canvas canvas;
-                                    Paint paint = new Paint();
-                                    bit = Bitmap.createBitmap(50,50,Bitmap.Config.ARGB_8888);
-                                    canvas = new Canvas(bit);
-                                    canvas.drawColor(Color.WHITE);
-                                    ledView.setImageBitmap(bit);
-                                    paint.setColor(Color.GRAY);
-                                    canvas.drawCircle(25,25,15,paint);
-                                }
-                            }
-                        }
-                    } else if (dataArray.length() > 28) {
-                        dataArray = "";
-                    }
-                }catch (Exception e)
-                {
-
-                }
-            }
-
-        }
-    }
-
-    long make_ASCII(long num)
-    {
-        if(num >= 0 && num <= 9)  num += '0'; // 0 ~ 9
-        else              num += '7'; // A ~ F
-
-        return num;
-    }
     @Override
     protected void onResume() {
-        invalidateOptionsMenu();
         super.onResume();
-        checkBluetoothPermission();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(final Menu menu) {
-        getMenuInflater().inflate(R.menu.connect, menu);
-        if (BluetoothDeviceManager.getInstance().isConnected(mDevice)) {
-            menu.findItem(R.id.menu_connect).setVisible(false);
-            menu.findItem(R.id.menu_disconnect).setVisible(true);
-            connectid.setText(mDevice.getName());
-            DeviceMirror deviceMirror = ViseBle.getInstance().getDeviceMirror(mDevice);
-            if (deviceMirror != null) {
-                simpleExpandableListAdapter = displayGattServices(deviceMirror.getBluetoothGatt().getServices());
-            }
-            mOutputInfo = new StringBuilder();
-
-
-        } else {
-            menu.findItem(R.id.menu_connect).setVisible(true);
-            menu.findItem(R.id.menu_disconnect).setVisible(false);
-            connectid.setText("No Device");
-        }
-        if (ViseBle.getInstance().getConnectState(mDevice) == ConnectState.CONNECT_PROCESS) {
-            menu.findItem(R.id.menu_refresh).setActionView(R.layout.actionbar_progress_indeterminate);
-        } else {
-            menu.findItem(R.id.menu_refresh).setActionView(null);
-        }
-        return true;
+        showConnectedDevice();
     }
 
     @Override
     protected void onDestroy() {
-        ViseBle.getInstance().clear();
-        BusManager.getBus().unregister(this);
         super.onDestroy();
+        BleManager.getInstance().disconnectAllDevice();
+        BleManager.getInstance().destroy();
     }
 
-    private void checkBluetoothPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            //校验是否已具有模糊定位权限
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                PermissionManager.instance().with(this).request(new OnPermissionCallback() {
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn_scan:
+                if (btn_scan.getText().equals(getString(R.string.start_scan))) {
+                    checkPermissions();
+                } else if (btn_scan.getText().equals(getString(R.string.stop_scan))) {
+                    BleManager.getInstance().cancelScan();
+                }
+                break;
+
+            case R.id.txt_setting:
+                if (layout_setting.getVisibility() == View.VISIBLE) {
+                    layout_setting.setVisibility(View.GONE);
+                    txt_setting.setText(getString(R.string.expand_search_settings));
+                } else {
+                    layout_setting.setVisibility(View.VISIBLE);
+                    txt_setting.setText(getString(R.string.retrieve_search_settings));
+                }
+                break;
+        }
+    }
+
+    private void initView() {
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        btn_scan = (Button) findViewById(R.id.btn_scan);
+        btn_scan.setText(getString(R.string.start_scan));
+        btn_scan.setOnClickListener(this);
+
+        et_name = (EditText) findViewById(R.id.et_name);
+        et_mac = (EditText) findViewById(R.id.et_mac);
+        et_uuid = (EditText) findViewById(R.id.et_uuid);
+        sw_auto = (Switch) findViewById(R.id.sw_auto);
+
+        layout_setting = (LinearLayout) findViewById(R.id.layout_setting);
+        txt_setting = (TextView) findViewById(R.id.txt_setting);
+        txt_setting.setOnClickListener(this);
+        layout_setting.setVisibility(View.GONE);
+        txt_setting.setText(getString(R.string.expand_search_settings));
+
+        img_loading = (ImageView) findViewById(R.id.img_loading);
+        operatingAnim = AnimationUtils.loadAnimation(this, R.anim.rotate);
+        operatingAnim.setInterpolator(new LinearInterpolator());
+        progressDialog = new ProgressDialog(this);
+
+        mDeviceAdapter = new DeviceAdapter(this);
+        mDeviceAdapter.setOnDeviceClickListener(new DeviceAdapter.OnDeviceClickListener() {
+            @Override
+            public void onConnect(BleDevice bleDevice) {
+                if (!BleManager.getInstance().isConnected(bleDevice)) {
+                    BleManager.getInstance().cancelScan();
+                    connect(bleDevice);
+                }
+            }
+
+            @Override
+            public void onDisConnect(final BleDevice bleDevice) {
+                if (BleManager.getInstance().isConnected(bleDevice)) {
+                    BleManager.getInstance().disconnect(bleDevice);
+                }
+            }
+
+            @Override
+            public void onDetail(BleDevice bleDevice) {
+                if (BleManager.getInstance().isConnected(bleDevice)) {
+                    Intent intent = new Intent(MainActivity.this, OperationActivity.class);
+                    intent.putExtra(OperationActivity.KEY_DATA, bleDevice);
+                    startActivity(intent);
+                }
+            }
+        });
+        ListView listView_device = (ListView) findViewById(R.id.list_device);
+        listView_device.setAdapter(mDeviceAdapter);
+    }
+
+    private void showConnectedDevice() {
+        List<BleDevice> deviceList = BleManager.getInstance().getAllConnectedDevice();
+        mDeviceAdapter.clearConnectedDevice();
+        for (BleDevice bleDevice : deviceList) {
+            mDeviceAdapter.addDevice(bleDevice);
+        }
+        mDeviceAdapter.notifyDataSetChanged();
+    }
+
+    private void setScanRule() {
+        String[] uuids;
+        String str_uuid = et_uuid.getText().toString();
+        if (TextUtils.isEmpty(str_uuid)) {
+            uuids = null;
+        } else {
+            uuids = str_uuid.split(",");
+        }
+        UUID[] serviceUuids = null;
+        if (uuids != null && uuids.length > 0) {
+            serviceUuids = new UUID[uuids.length];
+            for (int i = 0; i < uuids.length; i++) {
+                String name = uuids[i];
+                String[] components = name.split("-");
+                if (components.length != 5) {
+                    serviceUuids[i] = null;
+                } else {
+                    serviceUuids[i] = UUID.fromString(uuids[i]);
+                }
+            }
+        }
+
+        String[] names;
+        String str_name = et_name.getText().toString();
+        if (TextUtils.isEmpty(str_name)) {
+            names = null;
+        } else {
+            names = str_name.split(",");
+        }
+
+        String mac = et_mac.getText().toString();
+
+        boolean isAutoConnect = sw_auto.isChecked();
+
+        BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder()
+                .setServiceUuids(serviceUuids)      // 只扫描指定的服务的设备，可选
+                .setDeviceName(true, names)   // 只扫描指定广播名的设备，可选
+                .setDeviceMac(mac)                  // 只扫描指定mac的设备，可选
+                .setAutoConnect(isAutoConnect)      // 连接时的autoConnect参数，可选，默认false
+                .setScanTimeOut(10000)              // 扫描超时时间，可选，默认10秒
+                .build();
+        BleManager.getInstance().initScanRule(scanRuleConfig);
+    }
+
+    private void startScan() {
+        BleManager.getInstance().scan(new BleScanCallback() {
+            @Override
+            public void onScanStarted(boolean success) {
+                mDeviceAdapter.clearScanDevice();
+                mDeviceAdapter.notifyDataSetChanged();
+                img_loading.startAnimation(operatingAnim);
+                img_loading.setVisibility(View.VISIBLE);
+                btn_scan.setText(getString(R.string.stop_scan));
+            }
+
+            @Override
+            public void onLeScan(BleDevice bleDevice) {
+                super.onLeScan(bleDevice);
+            }
+
+            @Override
+            public void onScanning(BleDevice bleDevice) {
+                mDeviceAdapter.addDevice(bleDevice);
+                mDeviceAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onScanFinished(List<BleDevice> scanResultList) {
+                img_loading.clearAnimation();
+                img_loading.setVisibility(View.INVISIBLE);
+                btn_scan.setText(getString(R.string.start_scan));
+            }
+        });
+    }
+
+    private void connect(final BleDevice bleDevice) {
+        BleManager.getInstance().connect(bleDevice, new BleGattCallback() {
+            @Override
+            public void onStartConnect() {
+                progressDialog.show();
+            }
+
+            @Override
+            public void onConnectFail(BleDevice bleDevice, BleException exception) {
+                img_loading.clearAnimation();
+                img_loading.setVisibility(View.INVISIBLE);
+                btn_scan.setText(getString(R.string.start_scan));
+                progressDialog.dismiss();
+                Toast.makeText(MainActivity.this, getString(R.string.connect_fail), Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
+                progressDialog.dismiss();
+                mDeviceAdapter.addDevice(bleDevice);
+                mDeviceAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onDisConnected(boolean isActiveDisConnected, BleDevice bleDevice, BluetoothGatt gatt, int status) {
+                progressDialog.dismiss();
+
+                mDeviceAdapter.removeDevice(bleDevice);
+                mDeviceAdapter.notifyDataSetChanged();
+
+                if (isActiveDisConnected) {
+                    Toast.makeText(MainActivity.this, getString(R.string.active_disconnected), Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(MainActivity.this, getString(R.string.disconnected), Toast.LENGTH_LONG).show();
+                    ObserverManager.getInstance().notifyObserver(bleDevice);
+                }
+
+            }
+        });
+    }
+    void read(BleDevice bleDevice, String uuid_service, String uuid_read, BleReadCallback callback) {
+
+        BleManager.getInstance().read(
+                bleDevice,
+                uuid_service,
+                uuid_read,
+                new BleReadCallback() {
                     @Override
-                    public void onRequestAllow(String permissionName) {
-                        enableBluetooth();
+                    public void onReadSuccess(byte[] data) {
+                    uuid_read.toString();
                     }
 
                     @Override
-                    public void onRequestRefuse(String permissionName) {
-                        finish();
-                    }
+                    public void onReadFailure(BleException exception) {
 
-                    @Override
-                    public void onRequestNoAsk(String permissionName) {
-                        finish();
                     }
-                }, Manifest.permission.ACCESS_COARSE_LOCATION);
+                });
+    }
+
+    private void readRssi(BleDevice bleDevice) {
+        BleManager.getInstance().readRssi(bleDevice, new BleRssiCallback() {
+            @Override
+            public void onRssiFailure(BleException exception) {
+                Log.i(TAG, "onRssiFailure" + exception.toString());
+            }
+
+            @Override
+            public void onRssiSuccess(int rssi) {
+                Log.i(TAG, "onRssiSuccess: " + rssi);
+            }
+        });
+    }
+
+    private void setMtu(BleDevice bleDevice, int mtu) {
+        BleManager.getInstance().setMtu(bleDevice, mtu, new BleMtuChangedCallback() {
+            @Override
+            public void onSetMTUFailure(BleException exception) {
+                Log.i(TAG, "onsetMTUFailure" + exception.toString());
+            }
+
+            @Override
+            public void onMtuChanged(int mtu) {
+                Log.i(TAG, "onMtuChanged: " + mtu);
+            }
+        });
+    }
+
+    @Override
+    public final void onRequestPermissionsResult(int requestCode,
+                                                 @NonNull String[] permissions,
+                                                 @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case REQUEST_CODE_PERMISSION_LOCATION:
+                if (grantResults.length > 0) {
+                    for (int i = 0; i < grantResults.length; i++) {
+                        if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                            onPermissionGranted(permissions[i]);
+                        }
+                    }
+                }
+                break;
+        }
+    }
+
+    private void checkPermissions() {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (!bluetoothAdapter.isEnabled()) {
+            Toast.makeText(this, getString(R.string.please_open_blue), Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION};
+        List<String> permissionDeniedList = new ArrayList<>();
+        for (String permission : permissions) {
+            int permissionCheck = ContextCompat.checkSelfPermission(this, permission);
+            if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                onPermissionGranted(permission);
             } else {
-                enableBluetooth();
+                permissionDeniedList.add(permission);
             }
-        } else {
-            enableBluetooth();
         }
-    }
-    private void enableBluetooth() {
-        if (!BleUtil.isBleEnable(this)) {
-            BleUtil.enableBluetooth(this, 1);
-        } else {
+        if (!permissionDeniedList.isEmpty()) {
+            String[] deniedPermissions = permissionDeniedList.toArray(new String[permissionDeniedList.size()]);
+            ActivityCompat.requestPermissions(this, deniedPermissions, REQUEST_CODE_PERMISSION_LOCATION);
         }
     }
 
-    private SimpleExpandableListAdapter displayGattServices(final List<BluetoothGattService> gattServices) {
-        if (gattServices == null) return null;
-        String uuid;
-        final String unknownServiceString = getResources().getString(R.string.unknown_service);
-        final String unknownCharaString = getResources().getString(R.string.unknown_characteristic);
-        final List<Map<String, String>> gattServiceData = new ArrayList<>();
-        final List<List<Map<String, String>>> gattCharacteristicData = new ArrayList<>();
+    private void onPermissionGranted(String permission) {
+        switch (permission) {
+            case Manifest.permission.ACCESS_FINE_LOCATION:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !checkGPSIsOpen()) {
+                    new AlertDialog.Builder(this)
+                            .setTitle(R.string.notifyTitle)
+                            .setMessage(R.string.gpsNotifyMsg)
+                            .setNegativeButton(R.string.cancel,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            finish();
+                                        }
+                                    })
+                            .setPositiveButton(R.string.setting,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                                            startActivityForResult(intent, REQUEST_CODE_OPEN_GPS);
+                                        }
+                                    })
 
-        mGattServices = new ArrayList<>();
-        mGattCharacteristics = new ArrayList<>();
+                            .setCancelable(false)
+                            .show();
+                } else {
+                    setScanRule();
+                    startScan();
+                }
+                break;
+        }
+    }
 
-        // Loops through available GATT Services.
-        for (final BluetoothGattService gattService : gattServices) {
-            final Map<String, String> currentServiceData = new HashMap<>();
-            uuid = gattService.getUuid().toString();
-            currentServiceData.put(LIST_NAME, GattAttributeResolver.getAttributeName(uuid, unknownServiceString));
-            currentServiceData.put(LIST_UUID, uuid);
-            gattServiceData.add(currentServiceData);
+    private boolean checkGPSIsOpen() {
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null)
+            return false;
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
 
-            final List<Map<String, String>> gattCharacteristicGroupData = new ArrayList<>();
-            final List<BluetoothGattCharacteristic> gattCharacteristics = gattService.getCharacteristics();
-            final List<BluetoothGattCharacteristic> charas = new ArrayList<>();
-
-            // Loops through available Characteristics.
-            for (final BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                charas.add(gattCharacteristic);
-                final Map<String, String> currentCharaData = new HashMap<>();
-                uuid = gattCharacteristic.getUuid().toString();
-                currentCharaData.put(LIST_NAME, GattAttributeResolver.getAttributeName(uuid, unknownCharaString));
-                currentCharaData.put(LIST_UUID, uuid);
-                gattCharacteristicGroupData.add(currentCharaData);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_OPEN_GPS) {
+            if (checkGPSIsOpen()) {
+                setScanRule();
+                startScan();
             }
-
-            mGattServices.add(gattService);
-            mGattCharacteristics.add(charas);
-            gattCharacteristicData.add(gattCharacteristicGroupData);
         }
-
-        final SimpleExpandableListAdapter gattServiceAdapter = new SimpleExpandableListAdapter(this, gattServiceData, android.R.layout
-                .simple_expandable_list_item_2, new String[]{LIST_NAME, LIST_UUID}, new int[]{android.R.id.text1, android.R.id.text2},
-                gattCharacteristicData, android.R.layout.simple_expandable_list_item_2, new String[]{LIST_NAME, LIST_UUID}, new
-                int[]{android.R.id.text1, android.R.id.text2});
-        return gattServiceAdapter;
     }
 
-    private boolean isHexData(String str) {
-        if (str == null) {
-            return false;
-        }
-        char[] chars = str.toCharArray();
-        if ((chars.length & 1) != 0) {//个数为奇数，直接返回false
-            return false;
-        }
-        for (char ch : chars) {
-            if (ch >= '0' && ch <= '9') continue;
-            if (ch >= 'A' && ch <= 'F') continue;
-            if (ch >= 'a' && ch <= 'f') continue;
-            return false;
-        }
-        return true;
-    }
 }
