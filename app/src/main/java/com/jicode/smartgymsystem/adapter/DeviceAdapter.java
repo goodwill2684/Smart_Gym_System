@@ -11,6 +11,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 
+import com.clj.fastble.BleManager;
+import com.clj.fastble.data.BleDevice;
+import com.jicode.smartgymsystem.R;
+
 import java.util.ArrayList;
 import java.util.List;
 

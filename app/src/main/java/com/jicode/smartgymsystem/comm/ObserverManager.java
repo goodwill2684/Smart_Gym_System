@@ -3,6 +3,8 @@ package com.jicode.smartgymsystem.comm;
 
 
 
+import com.clj.fastble.data.BleDevice;
+
 import java.util.ArrayList;
 import java.util.List;
 

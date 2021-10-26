@@ -1,5 +1,6 @@
 package com.jicode.smartgymsystem;
 
+
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -30,12 +31,23 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-
+import com.clj.fastble.BleManager;
+import com.clj.fastble.callback.BleGattCallback;
+import com.clj.fastble.callback.BleMtuChangedCallback;
+import com.clj.fastble.callback.BleReadCallback;
+import com.clj.fastble.callback.BleRssiCallback;
+import com.clj.fastble.callback.BleScanCallback;
+import com.clj.fastble.data.BleDevice;
+import com.clj.fastble.exception.BleException;
+import com.clj.fastble.scan.BleScanRuleConfig;
 import com.jicode.smartgymsystem.adapter.DeviceAdapter;
+import com.jicode.smartgymsystem.comm.ObserverManager;
+import com.jicode.smartgymsystem.operation.OperationActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -297,7 +309,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 new BleReadCallback() {
                     @Override
                     public void onReadSuccess(byte[] data) {
-                    uuid_read.toString();
+                        uuid_read.toString();
                     }
 
                     @Override
@@ -413,7 +425,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         if (locationManager == null)
             return false;
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        return locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER);
     }
 
     @Override
