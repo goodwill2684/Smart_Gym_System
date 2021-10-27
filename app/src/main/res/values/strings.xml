@@ -1,3 +1,39 @@
 <resources>
-    <string name="app_name">SmartGymSystem</string>
+    <string name="app_name">SmartGym_Project</string>
+    <string name="notifyTitle">힌트</string>
+    <string name="gpsNotifyMsg">현재 휴대 전화 스캔 블루투스는 위치 기능을 켜야합니다.</string>
+    <string name="setting">설정</string>
+    <string name="cancel">취소</string>
+
+    <string name="start_scan">블루투스 스캔</string>
+    <string name="stop_scan">스캔 취소</string>
+    <string name="expand_search_settings">검색설정 열기</string>
+    <string name="retrieve_search_settings">검색설정 닫기</string>
+    <string name="connect_fail">연결 실패</string>
+    <string name="active_disconnected">연결 취소</string>
+    <string name="disconnected">연결 끊김</string>
+    <string name="please_open_blue">먼저 블루투스를 켜주세요.</string>
+    <string name="select_operation_type">작업 유형 선택</string>
+    <string name="characteristic">특성</string>
+    <string name="data_changed">데이터 변경：</string>
+    <string name="read">읽기</string>
+    <string name="write">쓰기</string>
+    <string name="open_notification">알림 열기</string>
+    <string name="close_notification">알림 닫기</string>
+    <string name="service_list">서비스 목록</string>
+    <string name="characteristic_list">기능 목록</string>
+    <string name="console">콘솔</string>
+    <string name="name">이름：</string>
+    <string name="mac">MAC:</string>
+    <string name="service">서비스</string>
+    <string name="type">type</string>
+    <string name="scan_setting">아래에서 스캔해야 하는 장치의 조건을 구성할 수 있습니다，</string>
+    <string name="setting_name">이름 설정</string>
+    <string name="setting_mac">블루투스 기기의 맥 주소를 입력하세요.</string>
+    <string name="setting_uuid">Bluetooth 장치의 UUID를 쉼표로 구분하여 입력하십시오.</string>
+    <string name="input_hex">HEX 형식 명령을 입력하십시오.</string>
+    <string name="connect">연결</string>
+    <string name="connected">연결됨</string>
+    <string name="disconnect">연결해재</string>
+    <string name="enter">입력</string>
 </resources>
