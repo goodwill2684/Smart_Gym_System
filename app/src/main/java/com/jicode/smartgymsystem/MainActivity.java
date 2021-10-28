@@ -3,16 +3,25 @@ package com.jicode.smartgymsystem;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGatt;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.nfc.FormatException;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.Ndef;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
@@ -49,9 +58,12 @@ import com.jicode.smartgymsystem.adapter.DeviceAdapter;
 import com.jicode.smartgymsystem.comm.ObserverManager;
 import com.jicode.smartgymsystem.operation.OperationActivity;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -61,9 +73,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_CODE_PERMISSION_LOCATION = 2;
 
     private LinearLayout layout_setting;
-    private TextView txt_setting;
+    private Button txt_setting;
     private Button btn_scan;
-    private EditText et_name, et_mac, et_uuid;
+    public EditText et_name, et_mac, et_uuid;
     private Switch sw_auto;
     private ImageView img_loading;
 
@@ -71,12 +83,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private DeviceAdapter mDeviceAdapter;
     private ProgressDialog progressDialog;
 
+    public static final String Error_Detected = "No NFC Tag Detected";
+    public static final String Write_Success = "Text Written Successfully";
+    public static final String Write_Error = "Error During Writing, Try Again";
+    NfcAdapter nfcAdapter;
+    PendingIntent pendingIntent;
+    IntentFilter writingTagFilters[];
+    boolean writeMode;
+    Tag myTag;
+    Context context;
+    EditText edit_message;
+    TextView nfc_contents;
+    Button activateButton;
+    public static MainActivity instance;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
-
+        context = this;
+        instance = this;
         BleManager.getInstance().init(getApplication());
         BleManager.getInstance()
                 .enableLog(true)
@@ -84,12 +110,131 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setConnectOverTime(20000)
                 .setOperateTimeout(5000);
 
+
+        activateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    if (myTag == null) {
+                        Toast.makeText(context, Error_Detected, Toast.LENGTH_LONG).show();
+                    } else {
+                        write("PlainText|" + edit_message.getText().toString(), myTag);
+                        Toast.makeText(context, Write_Success, Toast.LENGTH_LONG).show();
+                    }
+                } catch (IOException e) {
+                    Toast.makeText(context, Write_Error, Toast.LENGTH_LONG).show();
+                    e.printStackTrace();
+                } catch (FormatException e) {
+                    Toast.makeText(context, Write_Error, Toast.LENGTH_LONG).show();
+                    e.printStackTrace();
+                }
+            }
+
+        });
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        if (nfcAdapter == null) {
+            Toast.makeText(this, "This devis does not support NFC", Toast.LENGTH_LONG).show();
+            finish();
+        }
+        readFromIntent(getIntent());
+        pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
+        tagDetected.addCategory(Intent.CATEGORY_DEFAULT);
+        writingTagFilters = new IntentFilter[]{tagDetected};
+    } // OnCreate 끝
+
+    private void readFromIntent(Intent intent) {
+        String action = intent.getAction();
+        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)
+                || NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)
+                || NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
+            Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+            NdefMessage[] msgs = null;
+            if (rawMsgs != null) {
+                msgs = new NdefMessage[rawMsgs.length];
+                for (int i = 0; i < rawMsgs.length; i++) {
+                    msgs[i] = (NdefMessage) rawMsgs[i];
+                }
+            }
+            buildTagViews(msgs);
+        }
     }
 
+    private void buildTagViews(NdefMessage[] msgs) {
+        if (msgs == null || msgs.length == 0) return;
+        String text = "";
+        String tagId = new String(msgs[0].getRecords()[0].getType());
+        byte[] payload = msgs[0].getRecords()[0].getPayload();
+        String textEncoding = ((payload[0] & 128) == 0) ? "UTF-8" : "UTF-16";  // 텍스트 인코딩
+        int languageCodeLength = payload[0] & 0063; // 언어 코드 , e.g. "en"
+        // String languageCode = new String(payload,1,languageCodeLength, "US-ASCII");
+        try {
+            text = new String(payload, languageCodeLength + 1, payload.length - languageCodeLength - 1, textEncoding);
+        } catch (UnsupportedEncodingException e) {
+            Log.e("UnsupportedEncoding", e.toString());
+        }
+
+        nfc_contents.setText("NFC Content:" + text);
+    }
+
+    private void write(String text, Tag tag) throws IOException, FormatException {
+        NdefRecord[] records = {createRecord(text)};
+        NdefMessage message = new NdefMessage(records);
+        // get on instance of Ndef for the tag.
+        Ndef ndef = Ndef.get(tag);
+        // Enable I/O
+        ndef.connect();
+        // Write the message
+        ndef.writeNdefMessage(message);
+        //close the connection
+        ndef.close();
+    }
+
+    private NdefRecord createRecord(String text) throws UnsupportedEncodingException {
+        String lang = "en";
+        byte[] textBytes = text.getBytes();
+        byte[] langBytes = lang.getBytes("US-ASCII");
+        int langLength = langBytes.length;
+        int textLength = textBytes.length;
+        byte[] payload = new byte[1 + langLength + textLength];
+        // set status byte (see NDEF spec for actual bits)
+        payload[0] = (byte) langLength;
+        System.arraycopy(langBytes, 0, payload, 1, langLength);
+        System.arraycopy(textBytes, 0, payload, 1 + langLength, textLength);
+
+        NdefRecord recordNFC = new NdefRecord(NdefRecord.TNF_WELL_KNOWN, NdefRecord.RTD_TEXT, new byte[0], payload);
+
+        return recordNFC;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        readFromIntent(intent);
+        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
+            myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+        }
+    }
+    @Override
+    public void onPause() {
+        super.onPause();
+        WriteModeOff();
+    }
     @Override
     protected void onResume() {
         super.onResume();
         showConnectedDevice();
+        WriteModeOn();
+    }
+    private void WriteModeOn(){
+        writeMode = true;
+        nfcAdapter.enableForegroundDispatch(this,pendingIntent,writingTagFilters,null);
+
+    }
+    private void WriteModeOff(){
+        writeMode =false;
+        nfcAdapter.disableForegroundDispatch(this);
     }
 
     @Override
@@ -122,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void initView() {
+    public void initView() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -134,12 +279,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         et_mac = (EditText) findViewById(R.id.et_mac);
         et_uuid = (EditText) findViewById(R.id.et_uuid);
         sw_auto = (Switch) findViewById(R.id.sw_auto);
-
         layout_setting = (LinearLayout) findViewById(R.id.layout_setting);
-        txt_setting = (TextView) findViewById(R.id.txt_setting);
+        txt_setting =  findViewById(R.id.txt_setting);
+        edit_message = findViewById(R.id.edit_message);
+        nfc_contents = findViewById(R.id.nfc_contents);
+        activateButton = findViewById(R.id.activateButton);
+
         txt_setting.setOnClickListener(this);
         layout_setting.setVisibility(View.GONE);
         txt_setting.setText(getString(R.string.expand_search_settings));
+
 
         img_loading = (ImageView) findViewById(R.id.img_loading);
         operatingAnim = AnimationUtils.loadAnimation(this, R.anim.rotate);
@@ -150,6 +299,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mDeviceAdapter.setOnDeviceClickListener(new DeviceAdapter.OnDeviceClickListener() {
             @Override
             public void onConnect(BleDevice bleDevice) {
+                //연결
                 if (!BleManager.getInstance().isConnected(bleDevice)) {
                     BleManager.getInstance().cancelScan();
                     connect(bleDevice);
@@ -278,6 +428,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             @Override
             public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
+                //연결성공
                 progressDialog.dismiss();
                 mDeviceAdapter.addDevice(bleDevice);
                 mDeviceAdapter.notifyDataSetChanged();
