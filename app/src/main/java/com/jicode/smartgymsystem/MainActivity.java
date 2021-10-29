@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private LinearLayout layout_setting;
     private Button txt_setting;
     private Button btn_scan;
-    public EditText et_name, et_mac, et_uuid;
+    public TextView et_name, et_mac, et_uuid;
     private Switch sw_auto;
     private ImageView img_loading;
 
@@ -94,12 +94,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Context context;
     EditText edit_message;
     TextView nfc_contents;
-    Button activateButton;
+    public Button activateButton;
     public static MainActivity instance;
+    public ListView listView_device;
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mDeviceAdapter = new DeviceAdapter(this);
         initView();
         context = this;
         instance = this;
@@ -111,6 +114,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setOperateTimeout(5000);
 
 
+
         activateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -118,7 +122,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (myTag == null) {
                         Toast.makeText(context, Error_Detected, Toast.LENGTH_LONG).show();
                     } else {
-                        write("PlainText|" + edit_message.getText().toString(), myTag);
+
+//                        write("$"+ et_name.getText().toString() + "%" +et_mac.getText().toString(), myTag);
+                        write(et_mac.getText().toString(), myTag);
                         Toast.makeText(context, Write_Success, Toast.LENGTH_LONG).show();
                     }
                 } catch (IOException e) {
@@ -134,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (nfcAdapter == null) {
             Toast.makeText(this, "This devis does not support NFC", Toast.LENGTH_LONG).show();
-            finish();
+//            finish();
         }
         readFromIntent(getIntent());
         pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
@@ -173,18 +179,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } catch (UnsupportedEncodingException e) {
             Log.e("UnsupportedEncoding", e.toString());
         }
+        //읽었을때 텍스트뷰에 해당 태그의 값 보여줌.
 
         nfc_contents.setText("NFC Content:" + text);
+        if (text.toString() != null){
+            et_mac.setText(text);
+            btn_scan.callOnClick();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        try {
+                            Thread.sleep(1000);
+                            DeviceAdapter.ViewHolder.btn_connect.callOnClick();
+                        } catch (Exception e) {
+                            Log.e("연결오류",e.toString());
+                        }
+                    }
+                }
+            }).start();
+
+
+        }
     }
 
     private void write(String text, Tag tag) throws IOException, FormatException {
         NdefRecord[] records = {createRecord(text)};
         NdefMessage message = new NdefMessage(records);
-        // get on instance of Ndef for the tag.
+        // 태그에 대한 Ndef의 인스턴스를 가져오기.
         Ndef ndef = Ndef.get(tag);
-        // Enable I/O
+        // 입출력 활성화
         ndef.connect();
-        // Write the message
+        // Write the message 메세지 쓰기
         ndef.writeNdefMessage(message);
         //close the connection
         ndef.close();
@@ -197,7 +223,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int langLength = langBytes.length;
         int textLength = textBytes.length;
         byte[] payload = new byte[1 + langLength + textLength];
-        // set status byte (see NDEF spec for actual bits)
+        // 상태 바이트 설정(실제 비트는 NDEF 사양 참조)
         payload[0] = (byte) langLength;
         System.arraycopy(langBytes, 0, payload, 1, langLength);
         System.arraycopy(textBytes, 0, payload, 1 + langLength, textLength);
@@ -275,15 +301,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_scan.setText(getString(R.string.start_scan));
         btn_scan.setOnClickListener(this);
 
-        et_name = (EditText) findViewById(R.id.et_name);
-        et_mac = (EditText) findViewById(R.id.et_mac);
-        et_uuid = (EditText) findViewById(R.id.et_uuid);
+        et_name = (TextView) findViewById(R.id.et_name);
+        et_mac = (TextView) findViewById(R.id.et_mac);
+        et_uuid = (TextView) findViewById(R.id.et_uuid);
         sw_auto = (Switch) findViewById(R.id.sw_auto);
         layout_setting = (LinearLayout) findViewById(R.id.layout_setting);
         txt_setting =  findViewById(R.id.txt_setting);
         edit_message = findViewById(R.id.edit_message);
         nfc_contents = findViewById(R.id.nfc_contents);
         activateButton = findViewById(R.id.activateButton);
+        listView_device = (ListView) findViewById(R.id.list_device);
 
         txt_setting.setOnClickListener(this);
         layout_setting.setVisibility(View.GONE);
@@ -295,7 +322,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         operatingAnim.setInterpolator(new LinearInterpolator());
         progressDialog = new ProgressDialog(this);
 
-        mDeviceAdapter = new DeviceAdapter(this);
+
         mDeviceAdapter.setOnDeviceClickListener(new DeviceAdapter.OnDeviceClickListener() {
             @Override
             public void onConnect(BleDevice bleDevice) {
@@ -322,7 +349,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
         });
-        ListView listView_device = (ListView) findViewById(R.id.list_device);
+
         listView_device.setAdapter(mDeviceAdapter);
     }
 
@@ -370,11 +397,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         boolean isAutoConnect = sw_auto.isChecked();
 
         BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder()
-                .setServiceUuids(serviceUuids)      // 只扫描指定的服务的设备，可选
-                .setDeviceName(true, names)   // 只扫描指定广播名的设备，可选
-                .setDeviceMac(mac)                  // 只扫描指定mac的设备，可选
-                .setAutoConnect(isAutoConnect)      // 连接时的autoConnect参数，可选，默认false
-                .setScanTimeOut(10000)              // 扫描超时时间，可选，默认10秒
+                .setServiceUuids(serviceUuids)      // 지정된 서비스의 장비만 스캔(선택 사항)
+                .setDeviceName(true, names)   // 지정된 브로드캐스트 이름이 있는 장치만 검색, 선택 사항
+                .setDeviceMac(mac)                  // 지정된 mac의 장치만 스캔(선택 사항)
+                .setAutoConnect(isAutoConnect)      // 연결 시 AutoConnect 매개변수, 선택사항, 기본값은 false
+                .setScanTimeOut(10000)              // 스캔 시간 초과 시간, 선택 사항, 기본 10초
                 .build();
         BleManager.getInstance().initScanRule(scanRuleConfig);
     }

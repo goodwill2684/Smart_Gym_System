@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.clj.fastble.BleManager;
 import com.clj.fastble.data.BleDevice;
+import com.jicode.smartgymsystem.MainActivity;
 import com.jicode.smartgymsystem.R;
 
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ public class DeviceAdapter extends BaseAdapter {
 
     private final Context context;
     private final List<BleDevice> bleDeviceList = new ArrayList<>();
+    public static DeviceAdapter instance;
 
     public DeviceAdapter(Context context) {
         this.context = context;
@@ -63,6 +65,11 @@ public class DeviceAdapter extends BaseAdapter {
         clearConnectedDevice();
         clearScanDevice();
     }
+    public void connect(){
+
+    }
+
+
 
     @Override
     public int getCount() {
@@ -84,6 +91,7 @@ public class DeviceAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder;
+        instance = this;
         if (convertView != null) {
             holder = (ViewHolder) convertView.getTag();
         } else {
@@ -106,16 +114,22 @@ public class DeviceAdapter extends BaseAdapter {
             boolean isConnected = BleManager.getInstance().isConnected(bleDevice);
             String name = bleDevice.getName();
             String mac = bleDevice.getMac();
-            int rssi = bleDevice.getRssi();
+            byte[] testValue = bleDevice.getScanRecord();
+            int rssi = bleDevice.getRssi(); //신호 강도.
             holder.txt_name.setText(name);
             holder.txt_mac.setText(mac);
             holder.txt_rssi.setText(String.valueOf(rssi));
+
             if (isConnected) {
                 holder.img_blue.setImageResource(R.mipmap.ic_blue_connected);
                 holder.txt_name.setTextColor(0xFF1DE9B6);
                 holder.txt_mac.setTextColor(0xFF1DE9B6);
                 holder.layout_idle.setVisibility(View.GONE);
                 holder.layout_connected.setVisibility(View.VISIBLE);
+                MainActivity.instance.et_name.setText(name);
+                MainActivity.instance.et_mac.setText(mac);
+                MainActivity.instance.et_uuid.setText(String.valueOf(testValue));
+
             } else {
                 holder.img_blue.setImageResource(R.mipmap.ic_blue_remote);
                 holder.txt_name.setTextColor(0xFF000000);
@@ -155,7 +169,7 @@ public class DeviceAdapter extends BaseAdapter {
         return convertView;
     }
 
-    static class ViewHolder {
+    public static class ViewHolder {
         ImageView img_blue;
         TextView txt_name;
         TextView txt_mac;
@@ -163,8 +177,9 @@ public class DeviceAdapter extends BaseAdapter {
         LinearLayout layout_idle;
         LinearLayout layout_connected;
         Button btn_disconnect;
-        Button btn_connect;
+        public static Button btn_connect;
         Button btn_detail;
+
     }
 
     public interface OnDeviceClickListener {
