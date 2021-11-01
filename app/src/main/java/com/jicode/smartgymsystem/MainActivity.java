@@ -7,6 +7,8 @@ import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -25,6 +27,7 @@ import android.os.Parcelable;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -48,14 +51,16 @@ import androidx.core.content.ContextCompat;
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
 import com.clj.fastble.callback.BleMtuChangedCallback;
+import com.clj.fastble.callback.BleNotifyCallback;
 import com.clj.fastble.callback.BleReadCallback;
 import com.clj.fastble.callback.BleRssiCallback;
 import com.clj.fastble.callback.BleScanCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
-import com.jicode.smartgymsystem.adapter.DeviceAdapter;
+import com.clj.fastble.utils.HexUtil;
 import com.jicode.smartgymsystem.comm.ObserverManager;
+import com.jicode.smartgymsystem.operation.CharacteristicOperationFragment;
 import com.jicode.smartgymsystem.operation.OperationActivity;
 
 import java.io.IOException;
@@ -66,22 +71,19 @@ import java.util.UUID;
 
 
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int REQUEST_CODE_OPEN_GPS = 1;
     private static final int REQUEST_CODE_PERMISSION_LOCATION = 2;
 
-    private LinearLayout layout_setting;
-    private Button txt_setting;
-    private Button btn_scan;
-    public TextView et_name, et_mac, et_uuid;
-    private Switch sw_auto;
+    String nfcMac = "";
     private ImageView img_loading;
-
     private Animation operatingAnim;
-    private DeviceAdapter mDeviceAdapter;
     private ProgressDialog progressDialog;
+
+    private TextView valueText,countText,nameText;
+    private int count = 0;
 
     public static final String Error_Detected = "NFC 태그를 감지하지 못했습니다.";
     public static final String Write_Success = "성공적으로 NFC에 저장하였습니다.";
@@ -92,17 +94,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean writeMode;
     Tag myTag;
     Context context;
-    EditText edit_message;
-    TextView nfc_contents;
-    public Button activateButton;
     public static MainActivity instance;
-    public ListView listView_device;
+
+    BluetoothGattCharacteristic currCharacter = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mDeviceAdapter = new DeviceAdapter(this);
         initView();
         context = this;
         instance = this;
@@ -113,30 +112,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setConnectOverTime(20000)
                 .setOperateTimeout(5000);
 
-
-
-        activateButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                try {
-                    if (myTag == null) {
-                        Toast.makeText(context, Error_Detected, Toast.LENGTH_LONG).show();
-                    } else {
-
-//                        write("$"+ et_name.getText().toString() + "%" +et_mac.getText().toString(), myTag);
-                        write(et_mac.getText().toString(), myTag);
-                        Toast.makeText(context, Write_Success, Toast.LENGTH_LONG).show();
-                    }
-                } catch (IOException e) {
-                    Toast.makeText(context, Write_Error, Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
-                } catch (FormatException e) {
-                    Toast.makeText(context, Write_Error, Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
-                }
-            }
-
-        });
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (nfcAdapter == null) {
             Toast.makeText(this, "이 장치는 NFC를 지원하지 않습니다", Toast.LENGTH_LONG).show();
@@ -181,25 +156,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         //읽었을때 텍스트뷰에 해당 태그의 값 보여줌.
 
-        nfc_contents.setText("저장된 블루투스 MAC 주소: " + text);
         if (text.toString() != null){
-            et_mac.setText(text);
-            btn_scan.callOnClick();
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while (true) {
-                        try {
-                            Thread.sleep(1000);
-                            DeviceAdapter.ViewHolder.btn_connect.callOnClick();
-                        } catch (Exception e) {
-                            Log.e("연결오류",e.toString());
-                        }
-                    }
-                }
-            }).start();
-
-
+            nfcMac = text;
+            checkPermissions();
+            BleManager.getInstance().disconnectAllDevice();
         }
     }
 
@@ -250,7 +210,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
-        showConnectedDevice();
         WriteModeOn();
     }
     private void WriteModeOn(){
@@ -270,137 +229,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         BleManager.getInstance().destroy();
     }
 
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.btn_scan:
-                if (btn_scan.getText().equals(getString(R.string.start_scan))) {
-                    checkPermissions();
-                } else if (btn_scan.getText().equals(getString(R.string.stop_scan))) {
-                    BleManager.getInstance().cancelScan();
-                }
-                break;
-
-            case R.id.txt_setting:
-                if (layout_setting.getVisibility() == View.VISIBLE) {
-                    layout_setting.setVisibility(View.GONE);
-                    txt_setting.setText(getString(R.string.expand_search_settings));
-                } else {
-                    layout_setting.setVisibility(View.VISIBLE);
-                    txt_setting.setText(getString(R.string.retrieve_search_settings));
-                }
-                break;
-        }
-    }
 
     public void initView() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        btn_scan = (Button) findViewById(R.id.btn_scan);
-        btn_scan.setText(getString(R.string.start_scan));
-        btn_scan.setOnClickListener(this);
-
-        et_name = (TextView) findViewById(R.id.et_name);
-        et_mac = (TextView) findViewById(R.id.et_mac);
-        et_uuid = (TextView) findViewById(R.id.et_uuid);
-        sw_auto = (Switch) findViewById(R.id.sw_auto);
-        layout_setting = (LinearLayout) findViewById(R.id.layout_setting);
-        txt_setting =  findViewById(R.id.txt_setting);
-        edit_message = findViewById(R.id.edit_message);
-        nfc_contents = findViewById(R.id.nfc_contents);
-        activateButton = findViewById(R.id.activateButton);
-        listView_device = (ListView) findViewById(R.id.list_device);
-
-        txt_setting.setOnClickListener(this);
-        layout_setting.setVisibility(View.GONE);
-        txt_setting.setText(getString(R.string.expand_search_settings));
-
+        valueText = findViewById(R.id.value);
+        countText = findViewById(R.id.count);
+        nameText = findViewById(R.id.name);
 
         img_loading = (ImageView) findViewById(R.id.img_loading);
         operatingAnim = AnimationUtils.loadAnimation(this, R.anim.rotate);
         operatingAnim.setInterpolator(new LinearInterpolator());
         progressDialog = new ProgressDialog(this);
 
-
-        mDeviceAdapter.setOnDeviceClickListener(new DeviceAdapter.OnDeviceClickListener() {
-            @Override
-            public void onConnect(BleDevice bleDevice) {
-                //연결
-                if (!BleManager.getInstance().isConnected(bleDevice)) {
-                    BleManager.getInstance().cancelScan();
-                    connect(bleDevice);
-                }
-            }
-
-            @Override
-            public void onDisConnect(final BleDevice bleDevice) {
-                if (BleManager.getInstance().isConnected(bleDevice)) {
-                    BleManager.getInstance().disconnect(bleDevice);
-                }
-            }
-
-            @Override
-            public void onDetail(BleDevice bleDevice) {
-                if (BleManager.getInstance().isConnected(bleDevice)) {
-                    Intent intent = new Intent(MainActivity.this, OperationActivity.class);
-                    intent.putExtra(OperationActivity.KEY_DATA, bleDevice);
-                    startActivity(intent);
-                }
-            }
-        });
-
-        listView_device.setAdapter(mDeviceAdapter);
-    }
-
-    private void showConnectedDevice() {
-        List<BleDevice> deviceList = BleManager.getInstance().getAllConnectedDevice();
-        mDeviceAdapter.clearConnectedDevice();
-        for (BleDevice bleDevice : deviceList) {
-            mDeviceAdapter.addDevice(bleDevice);
-        }
-        mDeviceAdapter.notifyDataSetChanged();
     }
 
     private void setScanRule() {
-        String[] uuids;
-        String str_uuid = et_uuid.getText().toString();
-        if (TextUtils.isEmpty(str_uuid)) {
-            uuids = null;
-        } else {
-            uuids = str_uuid.split(",");
-        }
-        UUID[] serviceUuids = null;
-        if (uuids != null && uuids.length > 0) {
-            serviceUuids = new UUID[uuids.length];
-            for (int i = 0; i < uuids.length; i++) {
-                String name = uuids[i];
-                String[] components = name.split("-");
-                if (components.length != 5) {
-                    serviceUuids[i] = null;
-                } else {
-                    serviceUuids[i] = UUID.fromString(uuids[i]);
-                }
-            }
-        }
-
-        String[] names;
-        String str_name = et_name.getText().toString();
-        if (TextUtils.isEmpty(str_name)) {
-            names = null;
-        } else {
-            names = str_name.split(",");
-        }
-
-        String mac = et_mac.getText().toString();
-
-        boolean isAutoConnect = sw_auto.isChecked();
-
         BleScanRuleConfig scanRuleConfig = new BleScanRuleConfig.Builder()
-                .setServiceUuids(serviceUuids)      // 지정된 서비스의 장비만 스캔(선택 사항)
-                .setDeviceName(true, names)   // 지정된 브로드캐스트 이름이 있는 장치만 검색, 선택 사항
-                .setDeviceMac(mac)                  // 지정된 mac의 장치만 스캔(선택 사항)
-                .setAutoConnect(isAutoConnect)      // 연결 시 AutoConnect 매개변수, 선택사항, 기본값은 false
+//                .setDeviceMac(nfcMac)                  // 지정된 mac의 장치만 스캔(선택 사항)
                 .setScanTimeOut(10000)              // 스캔 시간 초과 시간, 선택 사항, 기본 10초
                 .build();
         BleManager.getInstance().initScanRule(scanRuleConfig);
@@ -410,11 +256,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         BleManager.getInstance().scan(new BleScanCallback() {
             @Override
             public void onScanStarted(boolean success) {
-                mDeviceAdapter.clearScanDevice();
-                mDeviceAdapter.notifyDataSetChanged();
                 img_loading.startAnimation(operatingAnim);
                 img_loading.setVisibility(View.VISIBLE);
-                btn_scan.setText(getString(R.string.stop_scan));
+                Log.d("scan", "start");
             }
 
             @Override
@@ -424,20 +268,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             @Override
             public void onScanning(BleDevice bleDevice) {
-                mDeviceAdapter.addDevice(bleDevice);
-                mDeviceAdapter.notifyDataSetChanged();
+                if(bleDevice.getName() != null)
+                Log.d("scan", bleDevice.getName());
+                if(bleDevice.getMac().equals(nfcMac)) {
+                    connect(bleDevice);
+                    Log.d("scan", "find");
+                }
             }
 
             @Override
             public void onScanFinished(List<BleDevice> scanResultList) {
                 img_loading.clearAnimation();
                 img_loading.setVisibility(View.INVISIBLE);
-                btn_scan.setText(getString(R.string.start_scan));
+                Log.d("scan","Finish");
             }
         });
     }
 
     private void connect(final BleDevice bleDevice) {
+        count = 0;
+        countText.setText("0개");
         BleManager.getInstance().connect(bleDevice, new BleGattCallback() {
             @Override
             public void onStartConnect() {
@@ -448,7 +298,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onConnectFail(BleDevice bleDevice, BleException exception) {
                 img_loading.clearAnimation();
                 img_loading.setVisibility(View.INVISIBLE);
-                btn_scan.setText(getString(R.string.start_scan));
                 progressDialog.dismiss();
                 Toast.makeText(MainActivity.this, getString(R.string.connect_fail), Toast.LENGTH_LONG).show();
             }
@@ -457,22 +306,81 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
                 //연결성공
                 progressDialog.dismiss();
-                mDeviceAdapter.addDevice(bleDevice);
-                mDeviceAdapter.notifyDataSetChanged();
-            }
+                Toast.makeText(MainActivity.this, getString(R.string.connect), Toast.LENGTH_LONG).show();
+                nameText.setText(bleDevice.getName());
+                //BluetoothGatt gatt = BleManager.getInstance().getBluetoothGatt(bleDevice);
+                for(BluetoothGattService serviceItem : gatt.getServices())
+                {
+                    for(BluetoothGattCharacteristic characteristic : serviceItem.getCharacteristics())
+                    {
+                        currCharacter = characteristic;
+                        int charaProp = characteristic.getProperties();
+                        if ((charaProp & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                                        BleManager.getInstance().notify(
+                                                bleDevice,
+                                                characteristic.getService().getUuid().toString(),
+                                                characteristic.getUuid().toString(),
+                                                new BleNotifyCallback() {
+                                                    @Override
+                                                    public void onNotifySuccess() {
+                                                        runOnUiThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                Toast.makeText(getApplication(), "notiStart", Toast.LENGTH_SHORT).show();
+                                                            }-
+                                                        });
+                                                    }
+
+                                                    @Override
+                                                    public void onNotifyFailure(final BleException exception) {
+                                                        runOnUiThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                Toast.makeText(getApplication(), exception.toString(), Toast.LENGTH_SHORT).show();
+                                                            }
+                                                        });
+                                                    }
+
+                                                    @Override
+                                                    public void onCharacteristicChanged(byte[] data) {
+                                                        runOnUiThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                String datastr = new String(characteristic.getValue());
+                                                                if(datastr.contains("count")) {
+                                                                    countText.setText(String.valueOf(count++) + "개");
+                                                                    valueText.setText(datastr.substring(0,datastr.indexOf(" "))+"\n");
+                                                                }
+                                                                else{
+                                                                    valueText.setText(datastr);
+                                                                }
+
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                    }
+
+                        }
+                    }
+                }
 
             @Override
             public void onDisConnected(boolean isActiveDisConnected, BleDevice bleDevice, BluetoothGatt gatt, int status) {
                 progressDialog.dismiss();
-
-                mDeviceAdapter.removeDevice(bleDevice);
-                mDeviceAdapter.notifyDataSetChanged();
-
+                nameText.setText("Device Name");
                 if (isActiveDisConnected) {
                     Toast.makeText(MainActivity.this, getString(R.string.active_disconnected), Toast.LENGTH_LONG).show();
                 } else {
                     Toast.makeText(MainActivity.this, getString(R.string.disconnected), Toast.LENGTH_LONG).show();
                     ObserverManager.getInstance().notifyObserver(bleDevice);
+                }
+
+                if (currCharacter != null) {
+                    BleManager.getInstance().stopNotify(
+                            bleDevice,
+                            currCharacter.getService().getUuid().toString(),
+                            currCharacter.getUuid().toString());
                 }
 
             }
@@ -588,7 +496,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                             startActivityForResult(intent, REQUEST_CODE_OPEN_GPS);
                                         }
                                     })
-
                             .setCancelable(false)
                             .show();
                 } else {

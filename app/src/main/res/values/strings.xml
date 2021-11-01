@@ -34,6 +34,6 @@
     <string name="input_hex">HEX 형식 명령을 입력하십시오.</string>
     <string name="connect">연결</string>
     <string name="connected">연결됨</string>
-    <string name="disconnect">연결해재</string>
+    <string name="disconnect">연결해제</string>
     <string name="enter">입력</string>
 </resources>
