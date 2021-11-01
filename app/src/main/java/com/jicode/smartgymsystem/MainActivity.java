@@ -83,9 +83,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private DeviceAdapter mDeviceAdapter;
     private ProgressDialog progressDialog;
 
-    public static final String Error_Detected = "No NFC Tag Detected";
-    public static final String Write_Success = "Text Written Successfully";
-    public static final String Write_Error = "Error During Writing, Try Again";
+    public static final String Error_Detected = "NFC 태그를 감지하지 못했습니다.";
+    public static final String Write_Success = "성공적으로 NFC에 저장하였습니다.";
+    public static final String Write_Error = "쓰는동안 오류가 발생했습니다. 다시 시도해주세요.";
     NfcAdapter nfcAdapter;
     PendingIntent pendingIntent;
     IntentFilter writingTagFilters[];
@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (nfcAdapter == null) {
-            Toast.makeText(this, "This devis does not support NFC", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "이 장치는 NFC를 지원하지 않습니다", Toast.LENGTH_LONG).show();
 //            finish();
         }
         readFromIntent(getIntent());
@@ -181,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         //읽었을때 텍스트뷰에 해당 태그의 값 보여줌.
 
-        nfc_contents.setText("NFC Content:" + text);
+        nfc_contents.setText("저장된 블루투스 MAC 주소: " + text);
         if (text.toString() != null){
             et_mac.setText(text);
             btn_scan.callOnClick();
