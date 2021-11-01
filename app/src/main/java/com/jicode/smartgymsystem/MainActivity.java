@@ -65,7 +65,6 @@ import java.util.List;
 import java.util.UUID;
 
 
-
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -102,7 +101,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         mDeviceAdapter = new DeviceAdapter(this);
+
         initView();
         context = this;
         instance = this;
@@ -114,7 +115,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setOperateTimeout(5000);
 
 
-
         activateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -122,8 +122,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if (myTag == null) {
                         Toast.makeText(context, Error_Detected, Toast.LENGTH_LONG).show();
                     } else {
-
-//                        write("$"+ et_name.getText().toString() + "%" +et_mac.getText().toString(), myTag);
+//                      write("$"+ et_name.getText().toString() + "%" +et_mac.getText().toString(), myTag);
                         write(et_mac.getText().toString(), myTag);
                         Toast.makeText(context, Write_Success, Toast.LENGTH_LONG).show();
                     }
@@ -182,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //읽었을때 텍스트뷰에 해당 태그의 값 보여줌.
 
         nfc_contents.setText("저장된 블루투스 MAC 주소: " + text);
-        if (text.toString() != null){
+        if (text.toString() != null) {
             et_mac.setText(text);
             btn_scan.callOnClick();
             new Thread(new Runnable() {
@@ -192,8 +191,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         try {
                             Thread.sleep(1000);
                             DeviceAdapter.ViewHolder.btn_connect.callOnClick();
+
                         } catch (Exception e) {
-                            Log.e("연결오류",e.toString());
+                            Log.e("연결오류", e.toString());
                         }
                     }
                 }
@@ -242,24 +242,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
         }
     }
+
     @Override
     public void onPause() {
         super.onPause();
         WriteModeOff();
     }
+
     @Override
     protected void onResume() {
         super.onResume();
         showConnectedDevice();
         WriteModeOn();
     }
-    private void WriteModeOn(){
+
+    private void WriteModeOn() {
         writeMode = true;
-        nfcAdapter.enableForegroundDispatch(this,pendingIntent,writingTagFilters,null);
+        nfcAdapter.enableForegroundDispatch(this, pendingIntent, writingTagFilters, null);
 
     }
-    private void WriteModeOff(){
-        writeMode =false;
+
+    private void WriteModeOff() {
+        writeMode = false;
         nfcAdapter.disableForegroundDispatch(this);
     }
 
@@ -306,7 +310,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         et_uuid = (TextView) findViewById(R.id.et_uuid);
         sw_auto = (Switch) findViewById(R.id.sw_auto);
         layout_setting = (LinearLayout) findViewById(R.id.layout_setting);
-        txt_setting =  findViewById(R.id.txt_setting);
+        txt_setting = findViewById(R.id.txt_setting);
         edit_message = findViewById(R.id.edit_message);
         nfc_contents = findViewById(R.id.nfc_contents);
         activateButton = findViewById(R.id.activateButton);
@@ -478,6 +482,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
     }
+
     void read(BleDevice bleDevice, String uuid_service, String uuid_read, BleReadCallback callback) {
 
         BleManager.getInstance().read(
