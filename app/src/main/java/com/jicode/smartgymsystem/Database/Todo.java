@@ -1,4 +1,4 @@
-package com.jicode.smartgymsystem;
+package com.jicode.smartgymsystem.Database;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;

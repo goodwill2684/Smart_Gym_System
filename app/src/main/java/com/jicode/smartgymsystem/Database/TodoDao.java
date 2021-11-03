@@ -1,4 +1,4 @@
-package com.jicode.smartgymsystem;
+package com.jicode.smartgymsystem.Database;
 
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;

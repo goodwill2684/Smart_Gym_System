@@ -18,8 +18,10 @@
         android:roundIcon="@drawable/gym_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartGymSystem">
-        <activity android:name=".MainActivity"
-            android:exported="true" >
+        <activity android:name=".MainActivity" android:exported="true" >
+
+        </activity>
+        <activity android:name=".DatabaseActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
