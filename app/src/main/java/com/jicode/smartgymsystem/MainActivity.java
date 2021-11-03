@@ -47,6 +47,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.room.Room;
 
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
@@ -115,13 +116,15 @@ public class MainActivity extends AppCompatActivity {
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (nfcAdapter == null) {
             Toast.makeText(this, "이 장치는 NFC를 지원하지 않습니다", Toast.LENGTH_LONG).show();
-//            finish();
+            finish();
         }
         readFromIntent(getIntent());
         pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
         IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
         tagDetected.addCategory(Intent.CATEGORY_DEFAULT);
         writingTagFilters = new IntentFilter[]{tagDetected};
+
+
     } // OnCreate 끝
 
     private void readFromIntent(Intent intent) {
@@ -265,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
             public void onLeScan(BleDevice bleDevice) {
                 super.onLeScan(bleDevice);
             }
-
+            //스캔중에 맥주소 가져온게 nfc태그 값(맥주소)와 같으면 바로 연결.
             @Override
             public void onScanning(BleDevice bleDevice) {
                 if(bleDevice.getName() != null)
@@ -320,6 +323,7 @@ public class MainActivity extends AppCompatActivity {
                                                 bleDevice,
                                                 characteristic.getService().getUuid().toString(),
                                                 characteristic.getUuid().toString(),
+                                                //알림 콜백부분.
                                                 new BleNotifyCallback() {
                                                     @Override
                                                     public void onNotifySuccess() {
@@ -358,6 +362,7 @@ public class MainActivity extends AppCompatActivity {
                                                             }
                                                         });
                                                     }
+
                                                 });
                                     }
 
