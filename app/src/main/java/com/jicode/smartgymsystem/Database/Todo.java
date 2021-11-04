@@ -12,10 +12,33 @@ public class Todo {
     @PrimaryKey(autoGenerate = true) //autoGenerate는 알아서 id를 1씩 증가 autoincrement와 동일.
     private int id;
     //@ColumnInfo(name = "first_name") ==>컬럼명 변수명과 다르게 사용 가능
+    @ColumnInfo(name = "title")
     private String title;
+    @ColumnInfo(name = "count")
+    private String count;
+    @ColumnInfo(name = "value")
+    private String value;
 
-    public Todo(String title) {
+    public String getCount() {
+        return count;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setCount(String count) {
+        this.count = count;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public Todo(String title, String count, String value) {
         this.title = title;
+        this.count = count;
+        this.value = value;
     }
 
     public int getId() {
@@ -36,6 +59,6 @@ public class Todo {
 
     @Override
     public String toString() {
-        return "\n id=> " + this.id + " , title=> " + this.title;
+        return "\n id=> " + this.id + " , title=> " + this.title + ", count =>" + this.count + ", value =>" + this.value +"\n";
     }
 }

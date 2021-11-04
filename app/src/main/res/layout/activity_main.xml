@@ -34,7 +34,14 @@
             android:includeFontPadding="false"
             />
 
-
+        <ImageView
+            android:id="@+id/data_info"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginLeft="20dp"
+            android:src="@drawable/data"/>
 
         <ImageView
             android:id="@+id/img_loading"
@@ -46,6 +53,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:visibility="invisible"/>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -94,6 +102,19 @@
             android:textSize="35dp"
             android:fontFamily="@font/notosanscjkkr_bold"
             android:includeFontPadding="false"
+            />
+
+        <Button
+            android:id="@+id/save_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SAVE"
+            android:textColor="#333333"
+            android:textSize="20dp"
+            android:layout_marginTop="20dp"
+            android:fontFamily="@font/notosanscjkkr_bold"
+            android:includeFontPadding="false"
+            android:background="#42C3C3"
             />
     </LinearLayout>
 

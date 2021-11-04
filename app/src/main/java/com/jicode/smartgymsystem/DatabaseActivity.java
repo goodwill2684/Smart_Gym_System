@@ -43,7 +43,9 @@ public class DatabaseActivity extends AppCompatActivity {
                 if(binding.etSetData.getText().toString().trim().length() <= 0) {
                     Toast.makeText(getApplicationContext(), "한글자 이상입력해주세요.", Toast.LENGTH_SHORT).show();
                 }else{
-                    new InsertAsyncTask(db.todoDao()).execute(new Todo(binding.etSetData.getText().toString()));
+                    String count = "";
+                    String value = "";
+                    new InsertAsyncTask(db.todoDao()).execute(new Todo(binding.etSetData.getText().toString(),count,value));
                     binding.etSetData.setText("");
 //                    ConstraintLayout.LayoutParams constraintLayout = null;
 //                    constraintLayout.horizontalBias = 0.43f;

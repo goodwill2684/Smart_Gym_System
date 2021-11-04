@@ -21,6 +21,7 @@ import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -47,6 +48,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.Observer;
 import androidx.room.Room;
 
 import com.clj.fastble.BleManager;
@@ -60,13 +62,18 @@ import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
 import com.clj.fastble.utils.HexUtil;
+import com.jicode.smartgymsystem.Database.Todo;
+import com.jicode.smartgymsystem.Database.TodoDao;
+import com.jicode.smartgymsystem.Database.TodoDatabase;
 import com.jicode.smartgymsystem.comm.ObserverManager;
 import com.jicode.smartgymsystem.operation.CharacteristicOperationFragment;
 import com.jicode.smartgymsystem.operation.OperationActivity;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -79,10 +86,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_PERMISSION_LOCATION = 2;
 
     String nfcMac = "";
-    private ImageView img_loading;
+    private ImageView img_loading ,data_info;
     private Animation operatingAnim;
     private ProgressDialog progressDialog;
 
+    private Button save_button;
     private TextView valueText,countText,nameText;
     private int count = 0;
 
@@ -97,6 +105,8 @@ public class MainActivity extends AppCompatActivity {
     Context context;
     public static MainActivity instance;
 
+    TodoDatabase db;
+
     BluetoothGattCharacteristic currCharacter = null;
 
     @Override
@@ -106,6 +116,17 @@ public class MainActivity extends AppCompatActivity {
         initView();
         context = this;
         instance = this;
+        //db 생성.
+        db = TodoDatabase.getAppDatabase(this);
+
+        //UI 갱신 (라이브데이터의 Observer 이용하였음, 해당 디비값이 변화가생기면 실행됨)
+        db.todoDao().getAll().observe(this, new Observer<List<Todo>>() {
+            @Override
+            public void onChanged(List<Todo> todos) {
+//                binding.dataView.setText(todos.toString());
+            }
+        });
+
         BleManager.getInstance().init(getApplication());
         BleManager.getInstance()
                 .enableLog(true)
@@ -124,6 +145,24 @@ public class MainActivity extends AppCompatActivity {
         tagDetected.addCategory(Intent.CATEGORY_DEFAULT);
         writingTagFilters = new IntentFilter[]{tagDetected};
 
+
+
+        data_info.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(context,DatabaseActivity.class);
+                startActivity(intent);
+            }
+        });
+        save_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Date dt = new Date();
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd hh:mm");
+                new InsertAsyncTask(db.todoDao())
+                        .execute(new Todo(dateFormat.format(dt).toString(),countText.getText().toString(),valueText.getText().toString()));
+            }
+        });
 
     } // OnCreate 끝
 
@@ -239,8 +278,10 @@ public class MainActivity extends AppCompatActivity {
         valueText = findViewById(R.id.value);
         countText = findViewById(R.id.count);
         nameText = findViewById(R.id.name);
+        save_button = findViewById(R.id.save_button);
 
         img_loading = (ImageView) findViewById(R.id.img_loading);
+        data_info = findViewById(R.id.data_info);
         operatingAnim = AnimationUtils.loadAnimation(this, R.anim.rotate);
         operatingAnim.setInterpolator(new LinearInterpolator());
         progressDialog = new ProgressDialog(this);
@@ -374,11 +415,23 @@ public class MainActivity extends AppCompatActivity {
             public void onDisConnected(boolean isActiveDisConnected, BleDevice bleDevice, BluetoothGatt gatt, int status) {
                 progressDialog.dismiss();
                 nameText.setText("Device Name");
+                //연결 취소.
                 if (isActiveDisConnected) {
                     Toast.makeText(MainActivity.this, getString(R.string.active_disconnected), Toast.LENGTH_LONG).show();
-                } else {
+                    if(!countText.getText().toString().equals("0개")){
+                      Date dt = new Date();
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd hh:mm");
+                        new InsertAsyncTask(db.todoDao())
+                                .execute(new Todo(dateFormat.format(dt).toString(),countText.getText().toString(),valueText.getText().toString()));
+                    }
+                } //연결 끊김.
+                else {
                     Toast.makeText(MainActivity.this, getString(R.string.disconnected), Toast.LENGTH_LONG).show();
                     ObserverManager.getInstance().notifyObserver(bleDevice);
+                    Date dt = new Date();
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd hh:mm");
+                    new InsertAsyncTask(db.todoDao())
+                            .execute(new Todo(dateFormat.format(dt).toString(),countText.getText().toString(),valueText.getText().toString()));
                 }
 
                 if (currCharacter != null) {
@@ -526,6 +579,23 @@ public class MainActivity extends AppCompatActivity {
                 setScanRule();
                 startScan();
             }
+        }
+    }
+    //메인스레드에서 데이터베이스에 접근할 수 없으므로 AsyncTask를 사용하도록 한다.
+    public static class InsertAsyncTask extends AsyncTask<Todo, Void, Void> {
+        private TodoDao mTodoDao;
+
+        public  InsertAsyncTask(TodoDao todoDao){
+            this.mTodoDao = todoDao;
+        }
+        @Override //백그라운드작업(메인스레드 X)
+        protected Void doInBackground(Todo... todos) {
+            //추가만하고 따로 SELECT문을 안해도 라이브데이터로 인해
+            //getAll()이 반응해서 데이터를 갱신해서 보여줄 것이다,  메인액티비티에 옵저버에 쓴 코드가 실행된다. (라이브데이터는 스스로 백그라운드로 처리해준다.)
+
+            mTodoDao.insert(todos[0]);
+            return null;
+
         }
     }
 
