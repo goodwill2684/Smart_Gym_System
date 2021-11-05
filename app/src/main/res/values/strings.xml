@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">SmartGym_Project</string>
-    <string name="notifyTitle">힌트</string>
-    <string name="gpsNotifyMsg">현재 휴대 전화 스캔 블루투스는 위치 기능을 켜야합니다.</string>
+    <string name="notifyTitle">알림</string>
+    <string name="gpsNotifyMsg">스마트폰의 GPS기능을 켜주세요.</string>
     <string name="setting">설정</string>
     <string name="cancel">취소</string>
 

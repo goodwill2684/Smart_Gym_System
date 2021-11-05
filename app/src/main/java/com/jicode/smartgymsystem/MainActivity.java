@@ -531,7 +531,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, deniedPermissions, REQUEST_CODE_PERMISSION_LOCATION);
         }
     }
-
+        //퍼미션 체크.
     private void onPermissionGranted(String permission) {
         switch (permission) {
             case Manifest.permission.ACCESS_FINE_LOCATION:
@@ -581,7 +581,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-    //메인스레드에서 데이터베이스에 접근할 수 없으므로 AsyncTask를 사용하도록 한다.
+    //<데이터 베이스 부분>메인스레드에서 데이터베이스에 접근할 수 없으므로 AsyncTask를 사용하도록 한다.
     public static class InsertAsyncTask extends AsyncTask<Todo, Void, Void> {
         private TodoDao mTodoDao;
 
@@ -591,8 +591,8 @@ public class MainActivity extends AppCompatActivity {
         @Override //백그라운드작업(메인스레드 X)
         protected Void doInBackground(Todo... todos) {
             //추가만하고 따로 SELECT문을 안해도 라이브데이터로 인해
-            //getAll()이 반응해서 데이터를 갱신해서 보여줄 것이다,  메인액티비티에 옵저버에 쓴 코드가 실행된다. (라이브데이터는 스스로 백그라운드로 처리해준다.)
-
+            //getAll()이 반응해서 데이터를 갱신해서 보여줌.
+            // 메인액티비티에 옵저버에 쓴 코드가 실행된다. (라이브데이터는 스스로 백그라운드로 처리해준다.)
             mTodoDao.insert(todos[0]);
             return null;
 
