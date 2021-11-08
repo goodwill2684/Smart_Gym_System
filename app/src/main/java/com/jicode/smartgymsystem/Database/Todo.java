@@ -59,6 +59,6 @@ public class Todo {
 
     @Override
     public String toString() {
-        return "\n id=> " + this.id + " , title=> " + this.title + ", count =>" + this.count + ", value =>" + this.value +"\n";
+        return "\n id= " + this.id + " , title= " + this.title+"\n" + "count = " + this.count + ", value = " + this.value +"\n";
     }
 }

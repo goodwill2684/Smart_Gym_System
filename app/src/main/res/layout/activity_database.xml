@@ -1,37 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#ffffff"
-    android:orientation="vertical">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:background="#ffffff">
 
-    <EditText
-        android:id="@+id/et_setData"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="2"
-        android:hint="값을 입력해주세요."
-        android:textColorHint="#000000"
-        android:textSize="15sp"
-        android:textColor="#000000"/>
-    <Button
-        android:id="@+id/button_add"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"/>
-    </LinearLayout>
+        <TextView
+            android:id="@+id/logTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:fontFamily="@font/notosanscjkkr_bold"
+            android:includeFontPadding="false"
+            android:text="Log"
+            android:textColor="#000000"
+            android:textSize="34dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="MissingConstraints" />
 
-    <TextView
-        android:id="@+id/dataView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="15sp"
-        android:textColor="#000000"/>
+        <TextView
+            android:id="@+id/dateText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/notosanscjkkr_bold"
+            android:includeFontPadding="false"
+            android:text="0000.00.00"
+            android:textColor="#55aaaa"
+            android:textSize="20dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/logTitle"
+            tools:ignore="MissingConstraints" />
 
-</LinearLayout>
+        <ImageView
+            android:id="@+id/calendar"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginLeft="15dp"
+            android:padding="5dp"
+            android:src="@drawable/calendar_icon"
+            app:layout_constraintBottom_toBottomOf="@id/dateText"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@id/logTitle"
+            tools:ignore="MissingConstraints" />
+
+        <View
+            android:id="@+id/topline"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="15dp"
+            android:background="#333333"
+            app:layout_constraintTop_toBottomOf="@id/dateText"
+            tools:ignore="MissingConstraints" />
+
+        <ListView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/topline"
+            tools:ignore="MissingConstraints" />
+    </androidx.constraintlayout.widget.ConstraintLayout>

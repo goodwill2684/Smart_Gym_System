@@ -123,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
         db.todoDao().getAll().observe(this, new Observer<List<Todo>>() {
             @Override
             public void onChanged(List<Todo> todos) {
-//                binding.dataView.setText(todos.toString());
+                Log.d("database :", "데이터베이스 변경됨.");
             }
         });
 
@@ -161,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd hh:mm");
                 new InsertAsyncTask(db.todoDao())
                         .execute(new Todo(dateFormat.format(dt).toString(),countText.getText().toString(),valueText.getText().toString()));
+            Toast.makeText(getApplicationContext(),"저장완료", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -317,6 +318,7 @@ public class MainActivity extends AppCompatActivity {
                 if(bleDevice.getMac().equals(nfcMac)) {
                     connect(bleDevice);
                     Log.d("scan", "find");
+
                 }
             }
 
@@ -453,12 +455,13 @@ public class MainActivity extends AppCompatActivity {
                 new BleReadCallback() {
                     @Override
                     public void onReadSuccess(byte[] data) {
-                        uuid_read.toString();
+                       Log.d("범용고유태그 uuid", uuid_read.toString());
+
                     }
 
                     @Override
                     public void onReadFailure(BleException exception) {
-
+                        Log.d("범용고유태그 uuid", exception.toString());
                     }
                 });
     }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:name="colorAccent">#a72128</item>
+    <item android:name="background">@drawable/dialog_white_roundcorner</item>
+    <!-- 선택한 날짜를 표시할 색상 -->
+    <item android:name="colorControlActivated">@color/colorPrimary</item>
+    <item android:name="colorControlHighlight">@color/colorPrimary</item>
+    <!-- 취소/확인버튼 색상 -->
+    <item android:name="android:textColor">@color/colorPrimary</item>
+
+</selector>
