@@ -51,7 +51,7 @@ public class DatabaseActivity extends AppCompatActivity {
         dataList = new ArrayList<Todo>();
         todoList = new ArrayList<Todo>();
         adapter = new DataListAdapter2(getApplicationContext(), dataList);
-        adapter2 = new DataListAdapter2(getApplicationContext(),todoList);
+        adapter2 = new DataListAdapter2(getApplicationContext(), todoList);
         binding.list.setAdapter(adapter2);
 
         //UI 갱신 (라이브데이터의 Observer 이용하였음, 해당 디비값이 변화가생기면 실행됨)
@@ -60,59 +60,37 @@ public class DatabaseActivity extends AppCompatActivity {
             public void onChanged(List<Todo> todos) {
                 todoList.clear();
                 todoList.addAll(todos);
-                adapter2.notifyDataSetChanged();
-//                binding.dataView.setText(todos.toString());
-//                if (dataList == null){
-//                    dataList.add(new DataList(todos.get(0).getId(),todos.get(0).getValue(),todos.get(0).getCount(),todos.get(0).getTitle()));
-//                } else if (dataList != null){
-//                    dataList.clear();
-//                    dataList.add(new DataList(todos.get(0).getId(),todos.get(0).getValue(),todos.get(0).getCount(),todos.get(0).getTitle()));
-//                }
+
             }
 
         });
         binding.list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Toast.makeText(getApplicationContext(),adapter2.getItem(i).getTitle().toString(),Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), adapter2.getItem(i).getTitle().toString(), Toast.LENGTH_SHORT).show();
             }
         });
 
-//        binding.dataView.setText(db.todoDao().getAll().toString());
-//        binding.buttonAdd.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                if(binding.etSetData.getText().toString().trim().length() <= 0) {
-//                    Toast.makeText(getApplicationContext(), "한글자 이상입력해주세요.", Toast.LENGTH_SHORT).show();
-//                }else{
-//                    String count = "";
-//                    String value = "";
-//                    new InsertAsyncTask(db.todoDao()).execute(new Todo(binding.etSetData.getText().toString(),count,value));
-//                    binding.etSetData.setText("");
-//
-//                }
-//            }
-//
-//        });
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this,R.style.DatePickerTheme,new DatePickerDialog.OnDateSetListener() {
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, R.style.DatePickerTheme, new DatePickerDialog.OnDateSetListener() {
             @Override
             public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
 
-                binding.dateText.setText(String.format("%04d.%02d.%02d",year,month+1,dayOfMonth));
-
-//                lastKey = "0";
-                dataList.clear();
-                if (binding.dateText.getText().length() > 0) {
-                    for (Todo data : todoList) {
-                        String str = binding.dateText.getText().toString();
-                        if ( data.getTitle().contains(str)) {
-                            dataList.add(data);
-                        }
-                    }
-                }else  dataList.addAll(todoList);
-
-                    adapter.notifyDataSetChanged();
-                    adapter2.notifyDataSetChanged();
+                binding.dateText.setText(String.format("%04d.%02d.%02d", year, month + 1, dayOfMonth));
+//
+////                lastKey = "0";
+//                dataList.clear();
+//                if (binding.dateText.getText().length() > 0) {
+//                    for (Todo data : todoList) {
+//                        String str = binding.dateText.getText().toString();
+//                        if (data.getTitle().contains(str)) {
+//                            dataList.add(data);
+//                        }
+//                    }
+//                } else dataList.addAll(todoList);
+//
+//                adapter.notifyDataSetChanged();
+//                adapter2.notifyDataSetChanged();
 
             }
         }, mYear, mMonth, mDay);
@@ -124,37 +102,41 @@ public class DatabaseActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                if (binding.dateText.getText().length() > 0) {
-                    for (Todo data : todoList) {
-                        String str = binding.dateText.getText().toString();
-                        if ( data.getTitle().contains(str)) {
-                            dataList.add(data);
-                        }
-                    }
-                }else  dataList.addAll(todoList);
-
-                adapter.notifyDataSetChanged();
-                adapter2.notifyDataSetChanged();
+//                if (binding.dateText.getText().length() > 0) {
+//                    for (Todo data : todoList) {
+//                        String str = binding.dateText.getText().toString();
+//                        if ( data.getTitle().contains(str)) {
+//                            dataList.add(data);
+//                        }
+//                    }
+//                }else  dataList.addAll(todoList);
+//
+//                adapter.notifyDataSetChanged();
+//                adapter2.notifyDataSetChanged();
 
             }
 
             @Override
             public void afterTextChanged(Editable editable) {
+
+                dataList.clear();
+
                 if (binding.dateText.getText().length() > 0) {
                     for (Todo data : todoList) {
                         String str = binding.dateText.getText().toString();
-                        if ( data.getTitle().contains(str)) {
+                        if (data.getTitle().contains(str)) {
                             dataList.add(data);
                         }
                     }
-                }else  dataList.addAll(todoList);
-
-                adapter.notifyDataSetChanged();
+                } if (dataList.size() == 0){
+                    dataList.addAll(todoList);
+                }
                 binding.list.setAdapter(adapter);
-//                adapter2.notifyDataSetChanged();
+                adapter.notifyDataSetChanged();
 
 
             }
+
         });
         binding.calendar.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -167,9 +149,10 @@ public class DatabaseActivity extends AppCompatActivity {
     public static class InsertAsyncTask extends AsyncTask<Todo, Void, Void> {
         private TodoDao mTodoDao;
 
-        public  InsertAsyncTask(TodoDao todoDao){
+        public InsertAsyncTask(TodoDao todoDao) {
             this.mTodoDao = todoDao;
         }
+
         @Override
         protected Void doInBackground(Todo... todos) {
 
