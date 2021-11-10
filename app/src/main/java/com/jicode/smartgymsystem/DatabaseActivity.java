@@ -129,11 +129,11 @@ public class DatabaseActivity extends AppCompatActivity {
                         }
                     }
                 } if (dataList.size() == 0){
+                    Toast.makeText(getApplicationContext(),"현재 선택하신 날에 운동 데이터가 없습니다.", Toast.LENGTH_SHORT).show();
                     dataList.addAll(todoList);
                 }
                 binding.list.setAdapter(adapter);
                 adapter.notifyDataSetChanged();
-
 
             }
 
