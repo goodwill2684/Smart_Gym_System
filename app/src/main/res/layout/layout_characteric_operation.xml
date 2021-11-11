@@ -16,7 +16,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="10dp"
-        android:textSize="12sp"
+        android:textSize="12dp"
         android:textStyle="bold" />
 
     <TextView
@@ -26,6 +26,6 @@
         android:fadeScrollbars="false"
         android:padding="10dp"
         android:scrollbars="vertical"
-        android:textSize="13sp" />
+        android:textSize="13dp" />
 
 </LinearLayout>

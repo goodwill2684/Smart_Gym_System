@@ -3,7 +3,10 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/drawable/bottom_icon_color.xml" value="0.5697916666666667" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/font/font.xml" value="0.27708333333333335" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/activity_event_detail.xml" value="0.5536458333333333" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/activity_intro.xml" value="0.5536458333333333" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/activity_main.xml" value="0.33" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/activity_operation.xml" value="0.5" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/activity_user.xml" value="0.67" />
@@ -12,10 +15,20 @@
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/adapter_service.xml" value="0.246875" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_characteric_list.xml" value="0.246875" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_characteric_operation.xml" value="0.246875" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_event.xml" value="0.5536458333333333" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_log.xml" value="0.22" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_main.xml" value="0.25" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_map.xml" value="0.5536458333333333" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_service_list.xml" value="0.20018115942028986" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_setting.xml" value="0.4463276836158192" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/fragment_sports.xml" value="0.25" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/layout_characteric_operation.xml" value="0.246875" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/layout_characteric_operation_button.xml" value="0.246875" />
         <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/layout_characteric_operation_et.xml" value="0.246875" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/list_item_event.xml" value="0.28125" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/popup_calendar.xml" value="0.5536458333333333" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/layout/popup_plate_callibration.xml" value="0.40625" />
+        <entry key="..\:/github/Smart_Gym_System/app/src/main/res/menu/menu_bottomnavigationview.xml" value="0.5536458333333333" />
       </map>
     </option>
   </component>

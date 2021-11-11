@@ -18,18 +18,27 @@
         android:roundIcon="@drawable/gym_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartGymSystem">
-        <activity android:name=".MainActivity"
+        <activity android:name=".IntroActivity"
+            android:screenOrientation="portrait"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name=".MainActivity"
+            android:screenOrientation="portrait"
+            android:exported="true">
+
             <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="text/plain"/>
             </intent-filter>
+
         </activity>
+
+        <activity android:name=".Popup.Callibration_Plate_Popup" android:theme="@android:style/Theme.Dialog" android:screenOrientation="unspecified"/>
     </application>
 
 </manifest>

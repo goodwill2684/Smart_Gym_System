@@ -14,6 +14,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.LocationManager;
 import android.nfc.FormatException;
 import android.nfc.NdefMessage;
@@ -23,12 +24,16 @@ import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Parcelable;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
@@ -47,6 +52,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
@@ -55,10 +63,18 @@ import com.clj.fastble.callback.BleNotifyCallback;
 import com.clj.fastble.callback.BleReadCallback;
 import com.clj.fastble.callback.BleRssiCallback;
 import com.clj.fastble.callback.BleScanCallback;
+import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
 import com.clj.fastble.utils.HexUtil;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.jicode.smartgymsystem.Fragment.EventFragment;
+import com.jicode.smartgymsystem.Fragment.LogFragment;
+import com.jicode.smartgymsystem.Fragment.MainFragment;
+import com.jicode.smartgymsystem.Fragment.SettingFragment;
+import com.jicode.smartgymsystem.Lib.BackPressHandler;
+import com.jicode.smartgymsystem.Lib.JCSharingPreferences;
 import com.jicode.smartgymsystem.comm.ObserverManager;
 import com.jicode.smartgymsystem.operation.CharacteristicOperationFragment;
 import com.jicode.smartgymsystem.operation.OperationActivity;
@@ -78,12 +94,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_PERMISSION_LOCATION = 2;
 
     String nfcMac = "";
-    private ImageView img_loading;
     private Animation operatingAnim;
     private ProgressDialog progressDialog;
 
-    private TextView valueText,countText,nameText;
-    private int count = 0;
+    private BackPressHandler backPressHandler = new BackPressHandler(this);
 
     public static final String Error_Detected = "NFC 태그를 감지하지 못했습니다.";
     public static final String Write_Success = "성공적으로 NFC에 저장하였습니다.";
@@ -95,12 +109,31 @@ public class MainActivity extends AppCompatActivity {
     Tag myTag;
     Context context;
     public static MainActivity instance;
+    MainFragment realTimeFragment = null;
 
     BluetoothGattCharacteristic currCharacter = null;
+    BluetoothGattCharacteristic writeCharacter = null;
+
+    JCSharingPreferences preferences;
+
+    Handler handler;
+
+    BleDevice device = null;
+    private FragmentManager fragmentManager = getSupportFragmentManager();
+    public static Fragment fragment;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(Color.parseColor("#ffffff"));
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
         setContentView(R.layout.activity_main);
         initView();
         context = this;
@@ -111,17 +144,25 @@ public class MainActivity extends AppCompatActivity {
                 .setReConnectCount(1, 5000)
                 .setConnectOverTime(20000)
                 .setOperateTimeout(5000);
-
+        preferences = new JCSharingPreferences(this);
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         if (nfcAdapter == null) {
             Toast.makeText(this, "이 장치는 NFC를 지원하지 않습니다", Toast.LENGTH_LONG).show();
+            preferences.putKey("isDeviceNfc",false);
 //            finish();
+        }else
+        {
+            preferences.putKey("isDeviceNfc",true);
         }
         readFromIntent(getIntent());
         pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
         IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
         tagDetected.addCategory(Intent.CATEGORY_DEFAULT);
         writingTagFilters = new IntentFilter[]{tagDetected};
+
+        BottomNavigate(R.id.bottom_map);
+        BottomNavigationView bottomNavigationView = findViewById(R.id.navigationView);
+        bottomNavigationView.setOnNavigationItemSelectedListener(new ItemSelectedListener());
     } // OnCreate 끝
 
     private void readFromIntent(Intent intent) {
@@ -139,6 +180,41 @@ public class MainActivity extends AppCompatActivity {
             }
             buildTagViews(msgs);
         }
+    }
+    class ItemSelectedListener implements BottomNavigationView.OnNavigationItemSelectedListener{
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+            BottomNavigate(menuItem.getItemId());
+            return true;
+        }
+    }
+    public void BottomNavigate(int id) {  //BottomNavigation 페이지 변경
+        String tag = String.valueOf(id);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        Fragment currentFragment = fragmentManager.getPrimaryNavigationFragment();
+
+        fragment = fragmentManager.findFragmentByTag(tag);
+        if (currentFragment != null) {
+            fragmentTransaction.hide(currentFragment);
+        }
+        if (fragment == null) {
+            if (id == R.id.bottom_map) {
+                fragment = new MainFragment();
+                realTimeFragment = (MainFragment) fragment;
+            } else if (id == R.id.bottom_log){
+                fragment = new LogFragment();
+            }else if (id == R.id.bottom_event){
+                fragment = new EventFragment();
+            }else if(id == R.id.bottom_setting) {
+                fragment = new SettingFragment();
+            }
+            fragmentTransaction.add(R.id.framelayout, fragment, tag);
+        } else fragmentTransaction.show(fragment);
+
+        fragmentTransaction.setPrimaryNavigationFragment(fragment);
+        fragmentTransaction.setReorderingAllowed(true);
+        fragmentTransaction.commitNow();
     }
 
     private void buildTagViews(NdefMessage[] msgs) {
@@ -210,7 +286,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        WriteModeOn();
+        if(preferences.getValue("isDeviceNfc",false))
+            WriteModeOn();
     }
     private void WriteModeOn(){
         writeMode = true;
@@ -233,11 +310,7 @@ public class MainActivity extends AppCompatActivity {
     public void initView() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        valueText = findViewById(R.id.value);
-        countText = findViewById(R.id.count);
-        nameText = findViewById(R.id.name);
 
-        img_loading = (ImageView) findViewById(R.id.img_loading);
         operatingAnim = AnimationUtils.loadAnimation(this, R.anim.rotate);
         operatingAnim.setInterpolator(new LinearInterpolator());
         progressDialog = new ProgressDialog(this);
@@ -256,8 +329,8 @@ public class MainActivity extends AppCompatActivity {
         BleManager.getInstance().scan(new BleScanCallback() {
             @Override
             public void onScanStarted(boolean success) {
-                img_loading.startAnimation(operatingAnim);
-                img_loading.setVisibility(View.VISIBLE);
+                realTimeFragment.img_loading.startAnimation(operatingAnim);
+                realTimeFragment.img_loading.setVisibility(View.VISIBLE);
                 Log.d("scan", "start");
             }
 
@@ -278,16 +351,15 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onScanFinished(List<BleDevice> scanResultList) {
-                img_loading.clearAnimation();
-                img_loading.setVisibility(View.INVISIBLE);
+                realTimeFragment.img_loading.clearAnimation();
+                realTimeFragment.img_loading.setVisibility(View.INVISIBLE);
                 Log.d("scan","Finish");
             }
         });
     }
 
     private void connect(final BleDevice bleDevice) {
-        count = 0;
-        countText.setText("0개");
+        realTimeFragment.initText();
         BleManager.getInstance().connect(bleDevice, new BleGattCallback() {
             @Override
             public void onStartConnect() {
@@ -296,8 +368,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onConnectFail(BleDevice bleDevice, BleException exception) {
-                img_loading.clearAnimation();
-                img_loading.setVisibility(View.INVISIBLE);
+                realTimeFragment.disconnect.setVisibility(View.INVISIBLE);
+                realTimeFragment.img_loading.clearAnimation();
+                realTimeFragment.img_loading.setVisibility(View.INVISIBLE);
                 progressDialog.dismiss();
                 Toast.makeText(MainActivity.this, getString(R.string.connect_fail), Toast.LENGTH_LONG).show();
             }
@@ -305,15 +378,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt gatt, int status) {
                 //연결성공
+                realTimeFragment.disconnect.setVisibility(View.VISIBLE);
                 progressDialog.dismiss();
+                realTimeFragment.img_loading.clearAnimation();
+                realTimeFragment.img_loading.setVisibility(View.INVISIBLE);
                 Toast.makeText(MainActivity.this, getString(R.string.connect), Toast.LENGTH_LONG).show();
-                nameText.setText(bleDevice.getName());
+                realTimeFragment.nameText.setText(bleDevice.getName());
                 //BluetoothGatt gatt = BleManager.getInstance().getBluetoothGatt(bleDevice);
                 for(BluetoothGattService serviceItem : gatt.getServices())
                 {
                     for(BluetoothGattCharacteristic characteristic : serviceItem.getCharacteristics())
                     {
-                        currCharacter = characteristic;
                         int charaProp = characteristic.getProperties();
                         if ((charaProp & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
                                         BleManager.getInstance().notify(
@@ -327,6 +402,8 @@ public class MainActivity extends AppCompatActivity {
                                                             @Override
                                                             public void run() {
                                                                 Toast.makeText(getApplication(), "notiStart", Toast.LENGTH_SHORT).show();
+                                                                currCharacter = characteristic;
+                                                                device = bleDevice;
                                                             }
                                                         });
                                                     }
@@ -347,19 +424,18 @@ public class MainActivity extends AppCompatActivity {
                                                             @Override
                                                             public void run() {
                                                                 String datastr = new String(characteristic.getValue());
-                                                                if(datastr.contains("count")) {
-                                                                    countText.setText(String.valueOf(count++) + "개");
-                                                                    valueText.setText(datastr.substring(0,datastr.indexOf(" "))+"\n");
-                                                                }
-                                                                else{
-                                                                    valueText.setText(datastr);
+                                                                if(datastr.contains("$r")) {
+                                                                    realTimeFragment.plusCount(Integer.parseInt(datastr.substring(2,datastr.indexOf(";"))));
                                                                 }
 
                                                             }
                                                         });
                                                     }
                                                 });
-                                    }
+                                    }else if((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0)
+                        {
+                            writeCharacter = characteristic;
+                        }
 
                         }
                     }
@@ -367,8 +443,10 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onDisConnected(boolean isActiveDisConnected, BleDevice bleDevice, BluetoothGatt gatt, int status) {
+                realTimeFragment.disconnect.setVisibility(View.INVISIBLE);
                 progressDialog.dismiss();
-                nameText.setText("Device Name");
+                realTimeFragment.nameText.setText("Device Name");
+                realTimeFragment.initText();
                 if (isActiveDisConnected) {
                     Toast.makeText(MainActivity.this, getString(R.string.active_disconnected), Toast.LENGTH_LONG).show();
                 } else {
@@ -381,6 +459,9 @@ public class MainActivity extends AppCompatActivity {
                             bleDevice,
                             currCharacter.getService().getUuid().toString(),
                             currCharacter.getUuid().toString());
+                    currCharacter = null;
+                    writeCharacter = null;
+                    device = null;
                 }
 
             }
@@ -512,7 +593,6 @@ public class MainActivity extends AppCompatActivity {
             return false;
         return locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER);
     }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -524,4 +604,39 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void sendData(String str)
+    {
+        if(device != null && writeCharacter != null) {
+            BleManager.getInstance().write(
+                    device,
+                    writeCharacter.getService().getUuid().toString(),
+                    writeCharacter.getUuid().toString(),
+                    str.getBytes(),
+                    new BleWriteCallback() {
+
+                        @Override
+                        public void onWriteSuccess(final int current, final int total, final byte[] justWrite) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onWriteFailure(final BleException exception) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                }
+                            });
+                        }
+                    });
+        }
+    }
+    @Override
+    public void onBackPressed() {
+        backPressHandler.onBackPressed();
+    }
 }

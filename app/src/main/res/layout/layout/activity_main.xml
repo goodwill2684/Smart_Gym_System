@@ -35,7 +35,7 @@
             android:focusableInTouchMode="true"
             android:text="@string/scan_setting"
             android:textColor="@color/colorPrimaryDark"
-            android:textSize="12sp" />
+            android:textSize="12dp" />
 
         <EditText
             android:id="@+id/et_name"
@@ -45,7 +45,7 @@
             android:textColorHint="#000000"
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
-            android:textSize="13sp"
+            android:textSize="13dp"
             android:textColor="#000000"/>
 
         <EditText
@@ -55,7 +55,7 @@
             android:hint="@string/setting_mac"
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
-            android:textSize="13sp"
+            android:textSize="13dp"
             android:textColor="#000000"
             android:textColorHint="#000000"/>
 
@@ -66,7 +66,7 @@
             android:hint="@string/setting_uuid"
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
-            android:textSize="13sp"
+            android:textSize="13dp"
             android:textColorHint="#000000"/>
 
         <Switch
@@ -76,7 +76,7 @@
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
             android:text="AutoConnect "
-            android:textSize="13sp"
+            android:textSize="13dp"
             android:textColor="#74b1ef"/>
 
     </LinearLayout>
