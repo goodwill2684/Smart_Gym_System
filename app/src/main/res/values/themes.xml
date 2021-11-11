@@ -13,4 +13,17 @@
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
     </style>
+    <style name="DatePickerTheme" parent="Theme.AppCompat.Light.Dialog">
+        <!-- 상단 색 변경 -->
+        <item name="colorAccent">@color/purple_200</item>
+
+        <!-- dialog의 배경 변경 -->
+        <!--        <item name="background">"@drawable/dialog_white_roundcorner"</item>-->
+        <!-- 선택한 날짜를 표시할 색상 -->
+        <item name="colorControlActivated">@color/purple_500</item>
+        <item name="colorControlHighlight">#B12D2D</item>
+        <!-- 취소/확인버튼 색상 -->
+        <item name="android:textColor">@color/purple_700</item>
+
+    </style>
 </resources>
