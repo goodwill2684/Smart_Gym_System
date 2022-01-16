@@ -27,9 +27,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Parcelable;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
@@ -37,13 +35,6 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.Switch;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -58,33 +49,26 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
-import com.clj.fastble.callback.BleMtuChangedCallback;
 import com.clj.fastble.callback.BleNotifyCallback;
-import com.clj.fastble.callback.BleReadCallback;
-import com.clj.fastble.callback.BleRssiCallback;
 import com.clj.fastble.callback.BleScanCallback;
 import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.clj.fastble.scan.BleScanRuleConfig;
-import com.clj.fastble.utils.HexUtil;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.jicode.smartgymsystem.Fragment.EventFragment;
 import com.jicode.smartgymsystem.Fragment.LogFragment;
+import com.jicode.smartgymsystem.Fragment.CalibrationFragment;
 import com.jicode.smartgymsystem.Fragment.MainFragment;
 import com.jicode.smartgymsystem.Fragment.SettingFragment;
 import com.jicode.smartgymsystem.Lib.BackPressHandler;
 import com.jicode.smartgymsystem.Lib.JCSharingPreferences;
+import com.jicode.smartgymsystem.Popup.Callibration_PinLoad_Popup;
 import com.jicode.smartgymsystem.comm.ObserverManager;
-import com.jicode.smartgymsystem.operation.CharacteristicOperationFragment;
-import com.jicode.smartgymsystem.operation.OperationActivity;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-
 
 
 public class MainActivity extends AppCompatActivity {
@@ -110,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
     Context context;
     public static MainActivity instance;
     MainFragment realTimeFragment = null;
+    LogFragment logFragment = null;
 
     BluetoothGattCharacteristic currCharacter = null;
     BluetoothGattCharacteristic writeCharacter = null;
@@ -203,9 +188,10 @@ public class MainActivity extends AppCompatActivity {
                 fragment = new MainFragment();
                 realTimeFragment = (MainFragment) fragment;
             } else if (id == R.id.bottom_log){
-                fragment = new LogFragment();
+                fragment = new CalibrationFragment();
             }else if (id == R.id.bottom_event){
-                fragment = new EventFragment();
+                logFragment = new LogFragment();
+                fragment = logFragment;
             }else if(id == R.id.bottom_setting) {
                 fragment = new SettingFragment();
             }
@@ -281,6 +267,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onPause() {
         super.onPause();
+        if(preferences.getValue("isDeviceNfc",false))
         WriteModeOff();
     }
     @Override
@@ -308,13 +295,10 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void initView() {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
         operatingAnim = AnimationUtils.loadAnimation(this, R.anim.rotate);
         operatingAnim.setInterpolator(new LinearInterpolator());
         progressDialog = new ProgressDialog(this);
-
     }
 
     private void setScanRule() {
@@ -426,8 +410,14 @@ public class MainActivity extends AppCompatActivity {
                                                                 String datastr = new String(characteristic.getValue());
                                                                 if(datastr.contains("$r")) {
                                                                     realTimeFragment.plusCount(Integer.parseInt(datastr.substring(2,datastr.indexOf(";"))));
+                                                                }else if(datastr.contains("$derr"))
+                                                                {
+                                                                    Toast.makeText(getApplication(), "캘리브레이션을 다시 해주세요!", Toast.LENGTH_SHORT).show();
+                                                                }else if(datastr.contains("$d"))
+                                                                {
+                                                                    if(Callibration_PinLoad_Popup.instance != null)
+                                                                        Callibration_PinLoad_Popup.instance.setDist(datastr.substring(2,datastr.indexOf(";")));
                                                                 }
-
                                                             }
                                                         });
                                                     }
@@ -467,53 +457,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    void read(BleDevice bleDevice, String uuid_service, String uuid_read, BleReadCallback callback) {
-
-        BleManager.getInstance().read(
-                bleDevice,
-                uuid_service,
-                uuid_read,
-                new BleReadCallback() {
-                    @Override
-                    public void onReadSuccess(byte[] data) {
-                        uuid_read.toString();
-                    }
-
-                    @Override
-                    public void onReadFailure(BleException exception) {
-
-                    }
-                });
+    public void logUpdate()
+    {
+        if(logFragment != null)
+            logFragment.LogUpdate();
     }
-
-    private void readRssi(BleDevice bleDevice) {
-        BleManager.getInstance().readRssi(bleDevice, new BleRssiCallback() {
-            @Override
-            public void onRssiFailure(BleException exception) {
-                Log.i(TAG, "onRssiFailure" + exception.toString());
-            }
-
-            @Override
-            public void onRssiSuccess(int rssi) {
-                Log.i(TAG, "onRssiSuccess: " + rssi);
-            }
-        });
-    }
-
-    private void setMtu(BleDevice bleDevice, int mtu) {
-        BleManager.getInstance().setMtu(bleDevice, mtu, new BleMtuChangedCallback() {
-            @Override
-            public void onSetMTUFailure(BleException exception) {
-                Log.i(TAG, "onsetMTUFailure" + exception.toString());
-            }
-
-            @Override
-            public void onMtuChanged(int mtu) {
-                Log.i(TAG, "onMtuChanged: " + mtu);
-            }
-        });
-    }
-
     @Override
     public final void onRequestPermissionsResult(int requestCode,
                                                  @NonNull String[] permissions,
@@ -613,7 +561,6 @@ public class MainActivity extends AppCompatActivity {
                     writeCharacter.getUuid().toString(),
                     str.getBytes(),
                     new BleWriteCallback() {
-
                         @Override
                         public void onWriteSuccess(final int current, final int total, final byte[] justWrite) {
                             runOnUiThread(new Runnable() {

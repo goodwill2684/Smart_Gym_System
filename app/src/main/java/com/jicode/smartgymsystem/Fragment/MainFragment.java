@@ -17,9 +17,11 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.clj.fastble.BleManager;
+import com.jicode.smartgymsystem.DBHelper;
 import com.jicode.smartgymsystem.Lib.JCSharingPreferences;
 import com.jicode.smartgymsystem.MainActivity;
 import com.jicode.smartgymsystem.R;
+import com.jicode.smartgymsystem.VO.TrainingVO;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -28,14 +30,14 @@ import java.util.ArrayList;
 
 
 public class MainFragment extends Fragment {
-
+    DBHelper dh;
     static public MainFragment instance;
-    JCSharingPreferences preferences;
     public TextView countText,nameText,weightText,runTime,restTime,setText;
     public Button setBtn, stopBtn, setWeight, disconnect;
     public ImageView img_loading;
     public SoundPool soundPool;
     public ArrayList<Integer> countSound;
+    public ArrayList<TrainingVO> trainingVOS;
 
     TimerTask timerTask;
     Timer timer = new Timer();
@@ -51,8 +53,10 @@ public class MainFragment extends Fragment {
         getActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         instance = this;
+        dh = new DBHelper(getContext(),"Besporte.db",null,1);
         countSound = new ArrayList<>();
         soundPool = new SoundPool(15, AudioManager.STREAM_MUSIC,0);
+        trainingVOS = new ArrayList<>();
         setSoundPool();
         countText = root.findViewById(R.id.count);
         nameText = root.findViewById(R.id.name);
@@ -126,12 +130,14 @@ public class MainFragment extends Fragment {
         super.onDestroy();
     }
 
-    private void startTimerTask()
+    private void startTimerTask() // 카운트 시작
     {
         timeCount = 0;
         preTimeCount = 0;
         runTime.setText("00:00");
-        restTime.setText("00:00");
+        restTime.setText("00:00.0");
+        setText.setText(String.valueOf(++setCount));
+        trainingVOS.clear();
         stopTimerTask();
         timerTask = new TimerTask()
         {
@@ -167,18 +173,24 @@ public class MainFragment extends Fragment {
             startTimerTask();
         if(count < 15)
             soundPool.play(countSound.get(count),1f,1f,0,0,1f);
+
         countText.setText(String.valueOf(++count)+"개");
+
+        trainingVOS.add(new TrainingVO(weight,count,timeCount,preTimeCount,setCount));
         preTimeCount = 0;
         restTime.setText("00:00.0");
     }
+
     private void stopTimerTask()
     {
         if(timerTask != null)
         {
+            dh.insert(nameText.getText().toString(),trainingVOS);
             timeCount = 0;
             preTimeCount = 0;
             runTime.setText("00:00");
-            restTime.setText("00:00");
+            restTime.setText("00:00.0");
+            trainingVOS.clear();
             timerTask.cancel();
             timerTask = null;
         }
@@ -186,6 +198,7 @@ public class MainFragment extends Fragment {
 
     public void initText()
     {
+        stopTimerTask();
         count = 0;
         timeCount = 0;
         preTimeCount = 0;
@@ -194,7 +207,6 @@ public class MainFragment extends Fragment {
         runTime.setText("00:00");
         restTime.setText("00:00.0");
         countText.setText("0개");
-        stopTimerTask();
     }
 
 

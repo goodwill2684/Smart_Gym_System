@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#ffffff"
     >
     <TextView
         android:id="@+id/dateText"
@@ -42,7 +43,7 @@
         android:gravity="center"
         tools:ignore="MissingConstraints">
         <TextView
-            android:id="@+id/warningText"
+            android:id="@+id/device_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="pushup"

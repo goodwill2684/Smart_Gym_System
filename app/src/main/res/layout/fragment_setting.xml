@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    >
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
         android:background="@color/white"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         >
 
         <LinearLayout
@@ -33,60 +32,75 @@
 
 
             <TextView
+                android:id="@+id/name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="원빈"
+                android:text="------"
                 android:fontFamily="@font/notosanscjkkr_bold"
                 android:textColor="#191919"
                 android:includeFontPadding="false"
                 android:textSize="19dp"/>
+
             <TextView
+                android:id="@+id/email"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="jicode@jicode.co.kr"
+                android:text="------@------.---"
                 android:fontFamily="@font/notosanscjkkr_bold"
                 android:textColor="#353535"
                 android:textSize="19dp"
                 android:includeFontPadding="false"/>
+
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:background="@drawable/sign_up_line"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:gravity="center"
-                android:layout_marginTop="18dp">
+                >
+                <TextView
+                    android:id="@+id/height_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="000cm"
+                    android:fontFamily="@font/notosanscjkkr_bold"
+                    android:textColor="#353535"
+                    android:textSize="19dp"
+                    android:layout_marginRight="10dp"
+                    android:includeFontPadding="false"/>
+                <TextView
+                    android:id="@+id/weight_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00kg"
+                    android:fontFamily="@font/notosanscjkkr_bold"
+                    android:textColor="#353535"
+                    android:textSize="19dp"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/setProfile"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/layout_back"
+                android:gravity="center">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="@font/notosanscjkkr_bold"
+                    android:includeFontPadding="false"
                     android:text="프로필 관리"
-                    android:fontFamily="@font/notosanscjkkr_bold"
-                    android:textSize="14dp"
-                    android:includeFontPadding="false"
-                    android:textColor="#191919"/>
+                    android:textColor="#191919"
+                    android:textSize="14dp" />
 
             </LinearLayout>
-            <LinearLayout
-                android:id="@+id/noti"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:background="@drawable/sign_up_line"
-                android:gravity="center"
-                android:layout_marginTop="18dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="취급 정보 관리"
-                    android:fontFamily="@font/notosanscjkkr_bold"
-                    android:textSize="14dp"
-                    android:includeFontPadding="false"
-                    android:textColor="#191919"/>
-
-            </LinearLayout>
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:background="@drawable/sign_up_line"
+                android:layout_height="50dp"
+                android:background="@drawable/layout_back"
                 android:gravity="center"
                 android:layout_marginTop="18dp">
 
@@ -103,8 +117,8 @@
             <LinearLayout
                 android:id="@+id/exit"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:background="@drawable/mypage_yellow"
+                android:layout_height="50dp"
+                android:background="@drawable/layout_back"
                 android:gravity="center"
                 android:backgroundTint="@android:color/holo_red_dark"
                 android:layout_marginTop="18dp">
@@ -136,4 +150,3 @@
             android:layout_height="match_parent"/>
 
     </LinearLayout>
-</layout>

@@ -5,7 +5,6 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.NFC"/>
     <uses-feature android:name="android.hardware.nfc" android:required="true" />
@@ -39,6 +38,9 @@
         </activity>
 
         <activity android:name=".Popup.Callibration_Plate_Popup" android:theme="@android:style/Theme.Dialog" android:screenOrientation="unspecified"/>
+        <activity android:name=".Popup.Callibration_PinLoad_Popup" android:theme="@android:style/Theme.Dialog" android:screenOrientation="unspecified"/>
+        <activity android:name=".LogDetailActivity"  android:screenOrientation="portrait"/>
+        <activity android:name=".SetMyInfoActivity"  android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

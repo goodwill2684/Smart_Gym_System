@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SmartGym_Project</string>
+    <string name="app_name">Besports</string>
     <string name="notifyTitle">알림</string>
     <string name="gpsNotifyMsg">스마트폰의 GPS기능을 켜주세요.</string>
     <string name="setting">설정</string>

@@ -1,42 +1,96 @@
 package com.jicode.smartgymsystem.Fragment;
 
-import android.content.Intent;
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.DatePicker;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.jicode.smartgymsystem.Popup.Callibration_Plate_Popup;
+import com.jicode.smartgymsystem.Adapter.TrainingLogAdapter;
+import com.jicode.smartgymsystem.DBHelper;
 import com.jicode.smartgymsystem.R;
-import com.jicode.smartgymsystem.databinding.FragmentCallBinding;
+import com.jicode.smartgymsystem.VO.TrainingLogVO;
+import com.jicode.smartgymsystem.databinding.FragmentLogBinding;
+
+import java.util.ArrayList;
+import java.util.Calendar;
 
 public class LogFragment extends Fragment {
+    DBHelper dh;
+    FragmentLogBinding binding;
+    TrainingLogAdapter adapter;
 
-    FragmentCallBinding binding;
+    String lastKey = "0";
 
+    ArrayList<TrainingLogVO> dataList;
+
+    Calendar c = Calendar.getInstance();
+    int mYear = c.get(Calendar.YEAR);
+    int mMonth = c.get(Calendar.MONTH);
+    int mDay = c.get(Calendar.DAY_OF_MONTH);
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        binding = DataBindingUtil.inflate(inflater,R.layout.fragment_call, container, false);
+        binding = FragmentLogBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        dh = new DBHelper(getContext(),"Besporte.db",null,1);
+        dataList = new ArrayList<TrainingLogVO>();
+        adapter = new TrainingLogAdapter(getActivity());
 
-        binding.plateload.setOnClickListener(new View.OnClickListener() {
+        binding.list.setAdapter(adapter);
+        binding.list.setLayoutManager(new LinearLayoutManager(getContext()));
+        dataList.addAll(dh.getTableDatas(null));
+        adapter.setmList(dataList);
+        lastKey = "0";
+
+        adapter.notifyDataSetChanged();
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(getContext(), new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                binding.dateText.setText(year+"."+(month+1)+"."+dayOfMonth);
+                mYear = year;
+                mMonth = month;
+                mDay = dayOfMonth;
+                dataList.clear();
+                dataList.addAll(dh.getTableDatas(String.valueOf(year)+String.valueOf(month+1)+String.valueOf(dayOfMonth)));
+            }
+        }, mYear, mMonth, mDay);
+
+        binding.eventTitle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getContext(), Callibration_Plate_Popup.class);
-                startActivity(intent);
+                binding.dateText.setText("All");
+                dataList.clear();
+                dataList.addAll(dh.getTableDatas(null));
+                adapter.notifyDataSetChanged();
             }
         });
+        binding.calendar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                datePickerDialog.show();
+            }
+        });
+        lastKey = "0";
         return root;
     }
 
+    public void LogUpdate()
+    {
+        binding.dateText.setText("All");
+        dataList.clear();
+        dataList.addAll(dh.getTableDatas(null));
+        adapter.notifyDataSetChanged();
+    }
 
 }

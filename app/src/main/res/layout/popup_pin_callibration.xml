@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="wrap_content"
+    android:background="#ffffff"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/titletext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/notosanscjkkr_medium"
+        android:text="Pin Loaded Machine"
+        android:textColor="#353535"
+        android:textSize="20dp" />
+
+    <TextView
+        android:id="@+id/level"
+        android:layout_width="190dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/titletext"
+        android:layout_marginLeft="35dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginRight="35dp"
+        android:fontFamily="@font/notosanscjkkr_bold"
+        android:gravity="center"
+        android:text="1/5"
+        android:textColor="#353535"
+        android:textSize="16dp" />
+
+    <TextView
+        android:id="@+id/contenttext"
+        android:layout_width="190dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/level"
+        android:layout_marginLeft="35dp"
+        android:layout_marginRight="35dp"
+        android:fontFamily="@font/notosanscjkkr_regular"
+        android:gravity="center"
+        android:text="인식테스트"
+        android:textColor="#353535"
+        android:textSize="16dp" />
+
+    <LinearLayout
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_below="@id/contenttext"
+        android:layout_marginTop="30dp"
+        >
+        <Button
+            android:id="@+id/cancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="#00ffffff"
+            android:text="취소"
+            android:fontFamily="@font/notosanscjkkr_medium"
+            android:textSize="15dp"
+            android:textColor="#d95055"
+            />
+        <Button
+            android:id="@+id/ok"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="#00ffffff"
+            android:text="확인"
+            android:fontFamily="@font/notosanscjkkr_medium"
+            android:textSize="15dp"
+            android:textColor="#15d0d9"
+            />
+
+    </LinearLayout>
+</RelativeLayout>

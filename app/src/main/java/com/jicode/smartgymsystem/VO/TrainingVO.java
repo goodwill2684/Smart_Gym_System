@@ -2,19 +2,19 @@ package com.jicode.smartgymsystem.VO;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.widget.RelativeLayout;
+
+import androidx.appcompat.widget.LinearLayoutCompat;
 
 public class TrainingVO  {
-    String deviceName;
-    String time;
     float weight;
     int count;
-    String runningTime;
-    String restTime;
+    int runningTime;
+    int restTime;
     int setcount;
+    boolean setlayout = false;
 
-    public TrainingVO(String deviceName, String time, float weight, int count, String runningTime, String restTime, int setcount) {
-        this.deviceName = deviceName;
-        this.time = time;
+    public TrainingVO(float weight, int count, int runningTime, int restTime, int setcount) {
         this.weight = weight;
         this.count = count;
         this.runningTime = runningTime;
@@ -22,21 +22,14 @@ public class TrainingVO  {
         this.setcount = setcount;
     }
 
-    public String getDeviceName() {
-        return deviceName;
+    public boolean isSetlayout() {
+        return setlayout;
     }
 
-    public void setDeviceName(String deviceName) {
-        this.deviceName = deviceName;
+    public void setSetlayout(boolean setlayout) {
+        this.setlayout = setlayout;
     }
 
-    public String getTime() {
-        return time;
-    }
-
-    public void setTime(String time) {
-        this.time = time;
-    }
 
     public float getWeight() {
         return weight;
@@ -54,19 +47,19 @@ public class TrainingVO  {
         this.count = count;
     }
 
-    public String getRunningTime() {
+    public int getRunningTime() {
         return runningTime;
     }
 
-    public void setRunningTime(String runningTime) {
+    public void setRunningTime(int runningTime) {
         this.runningTime = runningTime;
     }
 
-    public String getRestTime() {
+    public int getRestTime() {
         return restTime;
     }
 
-    public void setRestTime(String restTime) {
+    public void setRestTime(int restTime) {
         this.restTime = restTime;
     }
 
