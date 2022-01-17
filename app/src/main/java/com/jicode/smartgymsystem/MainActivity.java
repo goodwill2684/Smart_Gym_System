@@ -433,25 +433,30 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onDisConnected(boolean isActiveDisConnected, BleDevice bleDevice, BluetoothGatt gatt, int status) {
-                realTimeFragment.disconnect.setVisibility(View.INVISIBLE);
-                progressDialog.dismiss();
-                realTimeFragment.nameText.setText("Device Name");
-                realTimeFragment.initText();
-                if (isActiveDisConnected) {
-                    Toast.makeText(MainActivity.this, getString(R.string.active_disconnected), Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(MainActivity.this, getString(R.string.disconnected), Toast.LENGTH_LONG).show();
-                    ObserverManager.getInstance().notifyObserver(bleDevice);
-                }
+                try {
+                    realTimeFragment.disconnect.setVisibility(View.INVISIBLE);
+                    progressDialog.dismiss();
+                    realTimeFragment.nameText.setText("Device Name");
+                    realTimeFragment.initText();
+                    if (isActiveDisConnected) {
+                        Toast.makeText(MainActivity.this, getString(R.string.active_disconnected), Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(MainActivity.this, getString(R.string.disconnected), Toast.LENGTH_LONG).show();
+                        ObserverManager.getInstance().notifyObserver(bleDevice);
+                    }
 
-                if (currCharacter != null) {
-                    BleManager.getInstance().stopNotify(
-                            bleDevice,
-                            currCharacter.getService().getUuid().toString(),
-                            currCharacter.getUuid().toString());
-                    currCharacter = null;
-                    writeCharacter = null;
-                    device = null;
+                    if (currCharacter != null) {
+                        BleManager.getInstance().stopNotify(
+                                bleDevice,
+                                currCharacter.getService().getUuid().toString(),
+                                currCharacter.getUuid().toString());
+                        currCharacter = null;
+                        writeCharacter = null;
+                        device = null;
+                    }
+                }catch (Exception e)
+                {
+
                 }
 
             }

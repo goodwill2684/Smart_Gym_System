@@ -75,8 +75,11 @@ public class MainFragment extends Fragment {
         disconnect.setOnClickListener(new View.OnClickListener() {
                                           @Override
                                           public void onClick(View v) {
-                                              BleManager.getInstance().disconnectAllDevice();
-                                              disconnect.setVisibility(View.INVISIBLE);
+                                              try {
+                                                  BleManager.getInstance().disconnectAllDevice();
+                                                  disconnect.setVisibility(View.INVISIBLE);
+                                              }catch(Exception e)
+                                              {}
                                           }
                                       }
         );

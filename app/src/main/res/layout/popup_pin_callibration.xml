@@ -25,9 +25,10 @@
         android:layout_marginRight="35dp"
         android:fontFamily="@font/notosanscjkkr_bold"
         android:gravity="center"
-        android:text="1/5"
+        android:text="0/0"
         android:textColor="#353535"
-        android:textSize="16dp" />
+        android:textSize="16dp"
+        android:visibility="invisible" />
 
     <TextView
         android:id="@+id/contenttext"
@@ -42,11 +43,24 @@
         android:textColor="#353535"
         android:textSize="16dp" />
 
+    <EditText
+        android:id="@+id/count_edit"
+        android:layout_width="190dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/contenttext"
+        android:layout_centerInParent="true"
+        android:background="@drawable/layout_back"
+        android:gravity="center"
+        android:hint="중량판 개수"
+        android:paddingVertical="5dp"
+        android:inputType="number"
+        android:visibility="gone"
+        android:textColorHint="#aaaaaa" />
     <LinearLayout
         android:layout_width="260dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_below="@id/contenttext"
+        android:layout_below="@id/count_edit"
         android:layout_marginTop="30dp"
         >
         <Button

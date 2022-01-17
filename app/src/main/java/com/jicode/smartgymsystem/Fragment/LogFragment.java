@@ -61,8 +61,10 @@ public class LogFragment extends Fragment {
                 mYear = year;
                 mMonth = month;
                 mDay = dayOfMonth;
+                mDay = dayOfMonth;
                 dataList.clear();
-                dataList.addAll(dh.getTableDatas(String.valueOf(year)+String.valueOf(month+1)+String.valueOf(dayOfMonth)));
+                dataList.addAll(dh.getTableDatas(String.format("%04d",year)+String.format("%02d",month+1)+String.format("%02d",dayOfMonth)));
+                adapter.notifyDataSetChanged();
             }
         }, mYear, mMonth, mDay);
 
